@@ -1,96 +1,142 @@
-/**
-    Provide by Walon Li
-    2015/03/25
-**/
+#
+#   Provide by Walon Li
+#   2015/03/25
+#
 
 .code16
 
 .text
-/* Floppy header of FAT12 */
-    jmp LABEL_START                     /* jmp boot */
-    nop                                 /* nop is required */
-BS_OEMName:     .ascii      "WALON LI"  /* OEM String, 8 bytes required */
-BPB_BytsPerSec: .2byte      512         /* Bytes per sector */
-BPB_SecPerCluster: .byte    1           /* Sector per cluster */
-BPB_ResvdSecCnt:.2byte      1           /* Reserved sector count */
-BPB_NumFATs:    .byte       2           /* Number of FATs */
-BPB_RootEntCnt: .2byte      224         /* Root entries count */
-BPB_TotSec16:   .2byte      2880        /* Total sector number */
-BPB_Media:      .byte       0xf0        /* Media descriptor */
-BPB_FATSz16:    .2byte      9           /* FAT size(sectors) */
-BPB_SecPerTrk:  .2byte      18          /* Sector per track */
-BPB_NumHeads:   .2byte      2           /* Number of magnetic heads */
-BPB_HiddSec:    .4byte      0           /* Number of hidden sectors */
-BPB_TotSec32:   .4byte      0           /* If TotSec16 equal 0, this works */
-BS_DrvNum:      .byte       0           /* Driver number of interrupt 13 */
-BS_Reserved1:   .byte       0           /* Reserved */
-BS_BootSig:     .byte       0x29        /* Boot signal */
-BS_VolID:       .4byte      0           /* Volume ID */
-BS_VolLab:      .ascii      "WalOS  0.01" /* Volume label, 11 bytes required */
-BS_FileSysType: .ascii      "FAT12 "    /* File system type, 8 bytes required */
+# Floppy header of FAT12 
+    jmp LABEL_START                     # jmp boot 
+    nop                                 # nop is required 
+BS_OEMName:     .ascii      "WALON LI"  # OEM String, 8 bytes required 
+BPB_BytsPerSec: .2byte      512         # Bytes per sector 
+BPB_SecPerCluster: .byte    1           # Sector per cluster 
+BPB_ResvdSecCnt:.2byte      1           # Reserved sector count 
+BPB_NumFATs:    .byte       2           # Number of FATs 
+BPB_RootEntCnt: .2byte      224         # Root entries count 
+BPB_TotSec16:   .2byte      2880        # Total sector number 
+BPB_Media:      .byte       0xf0        # Media descriptor 
+BPB_FATSz16:    .2byte      9           # FAT size(sectors) 
+BPB_SecPerTrk:  .2byte      18          # Sector per track 
+BPB_NumHeads:   .2byte      2           # Number of magnetic heads 
+BPB_HiddSec:    .4byte      0           # Number of hidden sectors 
+BPB_TotSec32:   .4byte      0           # If TotSec16 equal 0, this works 
+BS_DrvNum:      .byte       0           # Driver number of interrupt 13 
+BS_Reserved1:   .byte       0           # Reserved 
+BS_BootSig:     .byte       0x29        # Boot signal 
+BS_VolID:       .4byte      0           # Volume ID 
+BS_VolLab:      .ascii      "WalOS  0.01" # Volume label, 11 bytes required 
+BS_FileSysType: .ascii      "FAT12 "    # File system type, 8 bytes required 
+
 
 LABEL_START:
-    mov %cs, %ax
-    mov %ax, %ds
-    mov %ax, %es
-    mov %ax, %ss
-    call ShowMsg
-    jmp .           # infinite loop
-    
-// ************************* //
-// ************************* //
-// ************************* //
+    mov     %cs,    %ax
+    mov     %ax,    %ds
+    mov     %ax,    %es
+    mov     %ax,    %ss
+
+    mov     $2,     %dh   
+    call    ShowMsg
+
+    mov     $0,     %dh   
+    call    ShowMsg
+
+    mov     $1,     %dh   
+    call    ShowMsg
+
+    # Reset floppy
+    xor     %ah,    %ah
+    xor     %dh,    %dh
+    int     $0x13
+    jmp     .                           # infinite loop
+
+
+LoaderName:     .asciz      "LOADER  BIN"
+PrintCount:     .byte       0
+
+# Boot string table
+Booting:        .ascii      "Booting......."
+LoadSuccess:    .ascii      "Load success.."
+LoadFail:       .ascii      "Load Fail....."
+.set            MsgLen,     14
+
+
+
+
+#
+#   ShowMsg
+#
+#   dh = Boot string table index
+
 ShowMsg:
-    mov $Msg, %ax
-    mov %ax, %bp
-    mov $MsgLen, %cx
+    mov     $MsgLen,    %ax
+    mul     %dh
+    add     $Booting,   %ax
+    mov     %ax,        %bp
 
-    # for int 10h
-    mov $0x1301, %ax
-    mov $0x00c, %bx
-    mov $0, %dl
-    int $0x10
-    ret
-Msg:    
-    .ascii "Hello, Walon OS!"
-    MsgLen = . - Msg    
+    # let es = ds
+    mov     %ds,        %ax
+    mov     %ax,        %es
 
-// ************************* //
-// ************************* //
-// ************************* //
+    mov     $MsgLen,    %cx
 
-/**
-    ReadSector
-**/
+    # call int 10h to show character
+    mov     $0x1301,    %ax
+    mov     $0x00c,     %bx
+    mov     (PrintCount), %dh
+    mov     $0,         %dl
+    int     $0x10
+
+    # PrintCount++
+    mov     (PrintCount), %ah
+    add     $1,         %ah
+    mov     %ah,        (PrintCount)
+    ret  
+
+
+
+#
+#   ReadSector
+#   	
+#   Read %cl sector from %ax floppy sector to es:bx
+#   x/(BPB_SecPerTrk) = y
+#   x%(BPB_SecPerTrk) = z
+#   z+1 = start sector number
+#   y/BPB_NumHeads = cylinder number
+#   y & 1 = magnetic header
+
 ReadSector:
-    push %ebp
-    mov %esp,%ebp
-    sub $2,%esp         /* Reserve space for saving %cl */
-    mov %cl,-2(%ebp)    // Restore cl
-    push %bx            /* Save bx */
-    mov (BPB_SecPerTrk), %bl /* %bl: the divider */
-    div %bl             /* 'y' in %al, 'z' in %ah */
-    inc %ah             /* z++, got start sector */
-    mov %ah,%cl         /* %cl <- start sector number */
-    mov %al,%dh         /* %dh <- 'y' */
-    shr $1,%al          /* 'y'/BPB_NumHeads */
-    mov %al,%ch         /* %ch <- Cylinder number(y>>1) */
-    and $1,%dh          /* %dh <- Magnetic header(y&1) */
-    pop %bx             /* Restore %bx */
-    /* Now, we got cylinder number in %ch, start sector number in %cl, magnetic
-       header in %dh. */
-    mov (BS_DrvNum), %dl
-GoOnReading:
-    mov $2,%ah
-    mov -2(%ebp),%al    /* Read %al sectors */
-    int $0x13
-    jc GoOnReading      /* If CF set 1, mean read error, reread. */
-    add $2,%esp
-    pop %ebp
+    push    %ebp
+    mov     %esp,   %ebp
+    sub     $2,     %esp        # Reserve 2byte space
+    mov     %cl,    -2(%ebp)    # Restore cl
+    push    %bx                 
+    mov     (BPB_SecPerTrk), %bl # bl is divider 
+    div     %bl                 # y in al, z in ah
+    inc     %ah                 # z++, get start sector
+    mov     %ah,    %cl         
+    mov     %al,    %dh         
+    shr     $1,     %al         # y/BPB_Numhead
+    mov     %al,    %ch         
+    and     $1,     %dh         
+    pop     %bx     
+
+    # %ch = cylinder number
+    # %cl = start sector number
+    # %dh = magnetic header
+    mov     (BS_DrvNum), %dl
+Reading:
+    mov     $2,     %ah
+    mov     -2(%ebp), %al       # Read %al sectors 
+    int     $0x13
+    jc      Reading             # check CF, if == 1, read again
+    add     $2,%esp
+    pop     %ebp
     ret
 
 
-.org 510            #fill null opcode until offset 510
-.word 0xaa55        #end mark
+.org 510            # fill null opcode until offset 510
+.word 0xaa55        # end mark
 
 
