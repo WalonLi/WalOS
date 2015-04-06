@@ -4,6 +4,15 @@
 #
 
 .code16
+# common macro
+.set        BaseOfStack,    0x7c00
+.set        BaseOfLoader,   0x9000
+.set        OffsetOfLoader, 0x0100      # Loading offset of LOADER.BIN
+.set        RootDirSectors, 14          # Root directory sector count
+.set        SecNoOfRootDir, 19          # 1st sector of root directory
+.set        SecNoOfFAT1,    1           # 1st sector of FAT1
+.set        DeltaSecNo,     17          # BPB_(RsvdSecCnt+NumFATs*FATSz) -2
+
 
 .text
 # Floppy header of FAT12 
@@ -36,14 +45,16 @@ LABEL_START:
     mov     %ax,    %es
     mov     %ax,    %ss
 
-    mov     $2,     %dh   
-    call    ShowMsg
+    call    ClearScreen
 
     mov     $0,     %dh   
     call    ShowMsg
 
-    mov     $1,     %dh   
-    call    ShowMsg
+#    mov     $0,     %dh   
+#    call    ShowMsg
+
+#    mov     $1,     %dh   
+#    call    ShowMsg
 
     # Reset floppy
     xor     %ah,    %ah
@@ -62,6 +73,19 @@ LoadFail:       .ascii      "Load Fail....."
 .set            MsgLen,     14
 
 
+
+
+#
+#   ClearScreen
+#
+
+ClearScreen:
+    mov     $0x600,     %ax
+    mov     $0x700,     %bx
+    mov     $0,         %cx
+    mov     $0x184f,    %dx         # {80,50}
+    int     $0x10
+    ret
 
 
 #
