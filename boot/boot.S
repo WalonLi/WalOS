@@ -3,6 +3,7 @@
 #   2015/03/25
 #
 
+
 .code16
 # common macro
 .set        BaseOfStack,    0x7c00
