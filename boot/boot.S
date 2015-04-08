@@ -37,7 +37,7 @@ BS_Reserved1:   .byte       0           # Reserved
 BS_BootSig:     .byte       0x29        # Boot signal 
 BS_VolID:       .4byte      0           # Volume ID 
 BS_VolLab:      .ascii      "WalOS  0.01" # Volume label, 11 bytes required 
-BS_FileSysType: .ascii      "FAT12 "    # File system type, 8 bytes required 
+BS_FileSysType: .ascii      "FAT12   "  # File system type, 8 bytes required 
 
 
 LABEL_START:
@@ -91,11 +91,6 @@ LABEL_SEARCH_FOR_LOADER_BIN:
     jz      LABEL_NEXT_SECTOR_IN_ROOT_DIR
     dec     %dx
 
-    push    %dx
-    mov     $3,         %dh
-    call    ShowMsg                             # Show Load success
-    pop     %dx
-
     # compare file name
     mov     $11,        %cx
 LABEL_CMP_FILE_NAME:
@@ -137,7 +132,7 @@ LABEL_NO_LOADER:
     # file name found
 LABEL_FILE_NAME_FOUND:
     mov     $RootDirSectors, %ax
-    add     $0xffe0,    %di                     # reset Entry, now, es:di is entry of head
+    and     $0xffe0,    %di                     # reset Entry, now, es:di is entry of head
     add     $0x1a,      %di                     # offset 0x1a record first sector number
     mov     %es:(%di),  %cx
     push    %cx                                 # restore first sector to stack
@@ -179,14 +174,13 @@ gRootDirSizeForLoop:    .2byte  RootDirSectors
 gSectorNo:              .2byte  0               # Sector number to read
 gOdd:                   .byte   0               # odd or even?
 
-LoaderName:     .asciz      "loader  bin"
+LoaderName:     .asciz      "LOADER  BIN"
 PrintCount:     .byte       0
 
 # Boot string table
 Booting:        .ascii      "Booting......"
 LoadSuccess:    .ascii      "Load success."
 LoadFail:       .ascii      "Load Fail...."
-NextSecter:     .ascii      "1111111111111"
 .set            MsgLen,     13
 
 
@@ -211,7 +205,7 @@ PrintDot:
     push    %ax
     push    %bx
     mov     $0xe,       %ah
-    mov     $'1',       %al                     # print '.'
+    mov     $'*',       %al                     # print '.'
     mov     $0xf,       %bl
     int     $0x10
     pop     %bx
