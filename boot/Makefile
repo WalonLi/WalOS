@@ -5,26 +5,39 @@
 
 CC=gcc
 LD=ld
-LDFILES=walos_x86.ld
+
+LDFILES_BOOT=walos_x86.ld
+LDFILES_DOS=walos_x86_dos.ld
+
 OBJCPY=objcopy
+TRIM_FLAGS=-R .pdr -R .comment -R.note -S -O binary
 DD=dd
 RM=rm
 
-all: boot.img
+all: boot.img loader.bin
 
-boot.o: boot.S
+boot.bin: boot.S
 	$(CC) -c boot.S
-    
-boot.elf: boot.o
-	$(LD) boot.o -o boot.elf -e c -T$(LDFILES)
+	$(LD) boot.o -o boot.elf -e c -T$(LDFILES_BOOT)
+	@$(OBJCPY) $(TRIM_FLAGS) boot.elf boot.bin
 
-boot.bin: boot.elf
-	@$(OBJCPY) -R .pdr -R .comment -R.note -S -O binary boot.elf boot.bin
+loader.bin: loader.S
+	$(CC) -c loader.S
+	$(LD) loader.o -o loader.elf -T$(LDFILES_DOS)
+	@$(OBJCPY) $(TRIM_FLAGS) loader.elf loader.bin
 
 boot.img: boot.bin
 	@$(DD) if=boot.bin of=boot.img bs=512 count=1 conv=notrunc
+	@$(DD) if=/dev/zero of=boot.img skip=1 seek=1 bs=512 count=2879
+
+copy: boot.img loader.bin
+	@mkdir -p /tmp/floppy;\
+	mount -o loop boot.img /tmp/floppy/ -o fat=12;\
+	cp loader.bin /tmp/floppy/;\
+	umount /tmp/floppy/;\
+	rm -rf /tmp/floppy/;
 
 clean:
-	@$(RM) boot.o boot.elf boot.bin boot.img bochsout.txt
+	@$(RM) -f *.o *.elf *.bin boot.img bochsout.txt
     
 

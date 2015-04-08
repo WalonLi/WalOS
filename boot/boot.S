@@ -83,16 +83,94 @@ LABEL_SEARCH_LOADER_IN_ROOT_DIR:
     mov     $LoaderName, %si                    # ds:si = "LOADER  BIN"
     mov     $OffsetOfLoader, %di                # BaseOfLoader<<4+100
     cld
-    mov     $0x10,      %dx
 
 
-# Not found LOADER.BIN in root dir
+    mov     $0x10,      %dx                     # each sector have 0x10 x 0x20 byts
+LABEL_SEARCH_FOR_LOADER_BIN:
+    cmp     $0,         %dx
+    jz      LABEL_NEXT_SECTOR_IN_ROOT_DIR
+    dec     %dx
+
+    push    %dx
+    mov     $3,         %dh
+    call    ShowMsg                             # Show Load success
+    pop     %dx
+
+    # compare file name
+    mov     $11,        %cx
+LABEL_CMP_FILE_NAME:
+    cmp     $0,         %cx
+    jz      LABEL_FILE_NAME_FOUND               # if cx == 0, file name is matche
+    dec     %cx
+    lodsb                                       # %ds:(%si) -> %al
+    cmp     %es:(%di),  %al
+    
+    jz      LABEL_NEXT_CHAR      
+    jmp     LABEL_FILE_NAME_NOT_MATCH
+
+
+    # file name not matched, check next 0x20 bytes
+LABEL_FILE_NAME_NOT_MATCH:                      
+    and     $0xffe0,    %di
+    add     $0x20,      %di
+    mov     $LoaderName, %si      
+    jmp     LABEL_SEARCH_FOR_LOADER_BIN
+
+    # compare next character
+LABEL_NEXT_CHAR:
+    inc     %di
+    jmp     LABEL_CMP_FILE_NAME
+
+
+LABEL_NEXT_SECTOR_IN_ROOT_DIR:
+    addw    $1,         (gSectorNo)
+    jmp     LABEL_SEARCH_LOADER_IN_ROOT_DIR
+
+
+    # Not found LOADER.BIN in root dir
 LABEL_NO_LOADER:
     mov     $2,         %dh
     call    ShowMsg                             # show load fail message
     jmp     .
 
 
+    # file name found
+LABEL_FILE_NAME_FOUND:
+    mov     $RootDirSectors, %ax
+    add     $0xffe0,    %di                     # reset Entry, now, es:di is entry of head
+    add     $0x1a,      %di                     # offset 0x1a record first sector number
+    mov     %es:(%di),  %cx
+    push    %cx                                 # restore first sector to stack
+    add     %ax,        %cx                     
+    add     $DeltaSecNo, %cx                    # LOADER.BIN's start sector saved in %cl
+    mov     $BaseOfLoader, %ax
+    mov     %ax,        %es                     # %es <- BaseOfLoader
+    mov     $OffsetOfLoader, %bx                # %bx <- OffsetOfLoader
+    mov     %cx,        %ax                     # %ax <- Sector number
+
+LABEL_LOADING_FILE:
+    call    PrintDot
+
+    mov     $1,         %cl
+    call    ReadSector
+    pop     %ax                                 # Got index of this sector in FAT
+    call    GetFATEntry
+    cmp     $0x0fff,    %ax                     # 0xfff means is the end sector
+    jz      LABEL_FILE_LOADED
+    push    %ax                                 # Save index of this sector in FAT
+    mov     $RootDirSectors, %dx
+    add     %dx,        %ax
+    add     $DeltaSecNo, %ax
+    add     (BPB_BytsPerSec), %bx
+    jmp     LABEL_LOADING_FILE
+
+LABEL_FILE_LOADED:
+    mov     $1,         %dh
+    call    ShowMsg                             # Show Load success
+    
+    # Jump to LOADER.BIN start address in memory
+    jmp     $BaseOfLoader, $OffsetOfLoader
+ 
 
 
 # data 
@@ -101,14 +179,15 @@ gRootDirSizeForLoop:    .2byte  RootDirSectors
 gSectorNo:              .2byte  0               # Sector number to read
 gOdd:                   .byte   0               # odd or even?
 
-LoaderName:     .asciz      "LOADER  BIN"
+LoaderName:     .asciz      "loader  bin"
 PrintCount:     .byte       0
 
 # Boot string table
-Booting:        .ascii      "Booting......."
-LoadSuccess:    .ascii      "Load success.."
-LoadFail:       .ascii      "Load Fail....."
-.set            MsgLen,     14
+Booting:        .ascii      "Booting......"
+LoadSuccess:    .ascii      "Load success."
+LoadFail:       .ascii      "Load Fail...."
+NextSecter:     .ascii      "1111111111111"
+.set            MsgLen,     13
 
 
 
@@ -123,6 +202,20 @@ ClearScreen:
     mov     $0,         %cx
     mov     $0x184f,    %dx         # {80,50}
     int     $0x10
+    ret
+
+#
+#   PrintDot
+#
+PrintDot:
+    push    %ax
+    push    %bx
+    mov     $0xe,       %ah
+    mov     $'1',       %al                     # print '.'
+    mov     $0xf,       %bl
+    int     $0x10
+    pop     %bx
+    pop     %ax
     ret
 
 
@@ -196,6 +289,46 @@ Reading:
     jc      Reading             # check CF, if == 1, read again
     add     $2,%esp
     pop     %ebp
+    ret
+
+
+#
+#   GetFATEntry
+#
+
+GetFATEntry:
+    push    %es
+    push    %bx
+    push    %ax
+    mov     $BaseOfLoader, %ax
+    sub     $0x0100,    %ax
+    mov     %ax,        %es                 # Left 4K bytes for FAT 
+    pop     %ax
+    mov     $3,         %bx
+    mul     %bx                             # %dx:%ax = %ax*3 
+    mov     $2,         %bx
+    div     %bx                             # %dx:%ax/2 
+    movb    %dl,        (gOdd)              # store remainder %dx in label bOdd. 
+LABEL_EVEN:
+    xor     %dx,        %dx                 # Now %ax is the offset of FATEntry in FAT 
+    mov     (BPB_BytsPerSec), %bx
+    div     %bx                             # %dx:%ax/BPB_BytsPerSec 
+    push    %dx
+    mov     $0,         %bx
+    add     $SecNoOfFAT1, %ax               # %ax <- FATEntry sector 
+    mov     $2,         %cl                 # Read 2 sectors in 1 time, because FATEntry 
+    call    ReadSector                      # may be in 2 sectors. 
+    pop     %dx
+    add     %dx,        %bx
+    mov     %es:(%bx),  %ax                 # read FAT entry by word(2 bytes) 
+    cmpb    $0,         (gOdd)              # remainder %dx(see above) == 0 ?
+    jz      LABEL_EVEN_2                    # NOTE: %ah: high address byte, %al: low byte 
+    shr     $4,         %ax
+LABEL_EVEN_2:
+    and     $0x0fff,    %ax
+LABEL_GET_FAT_ENTRY_OK:
+    pop     %bx
+    pop     %es
     ret
 
 
