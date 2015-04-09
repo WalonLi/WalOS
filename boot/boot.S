@@ -144,7 +144,7 @@ LABEL_FILE_NAME_FOUND:
     mov     %cx,        %ax                     # %ax <- Sector number
 
 LABEL_LOADING_FILE:
-    call    PrintDot
+    #call    PrintDot
 
     mov     $1,         %cl
     call    ReadSector
@@ -205,7 +205,7 @@ PrintDot:
     push    %ax
     push    %bx
     mov     $0xe,       %ah
-    mov     $'*',       %al                     # print '.'
+    mov     $'.',       %al                     # print '.'
     mov     $0xf,       %bl
     int     $0x10
     pop     %bx
@@ -232,7 +232,18 @@ ShowMsg:
 
     # call int 10h to show character
     mov     $0x1301,    %ax
-    mov     $0x00c,     %bx
+
+    cmp	    $2,         %dh
+    jz      MsgRedColor
+    jmp     MsgWhiteColor
+
+MsgRedColor:
+    mov     $0xc,       %bx
+    jmp     MsgFlag
+MsgWhiteColor:
+    mov     $0x7,       %bx
+
+MsgFlag:
     mov     (PrintCount), %dh
     mov     $0,         %dl
     int     $0x10

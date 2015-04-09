@@ -13,9 +13,12 @@ OBJCPY=objcopy
 TRIM_FLAGS=-R .pdr -R .comment -R.note -S -O binary
 DD=dd
 RM=rm
+ECHO=echo
 
 all: boot.img loader.bin
-
+	@$(ECHO) "***********************************************************************"
+	@$(ECHO) "Please run command \"sudo make copy\" to copy loader.bin into boot.img."
+	@$(ECHO) "***********************************************************************"
 boot.bin: boot.S
 	$(CC) -c boot.S
 	$(LD) boot.o -o boot.elf -e c -T$(LDFILES_BOOT)

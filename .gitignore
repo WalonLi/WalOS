@@ -1,0 +1,8 @@
+#ignore file
+
+*.bin
+*.elf
+*.img
+*.o
+
+bochsout.txt
