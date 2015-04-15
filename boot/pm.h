@@ -48,7 +48,7 @@
 */
 .macro Descriptor Base, Limit, Attr
     .2byte  \Limit & 0xffff
-    .2byte  \Base & 0xffff 
+    .2byte  \Base & 0xffff
     .byte   (\Base >> 16) & 0xff
     .2byte  ((\Limit >> 8) & 0xf00) | (\Attr & 0xf0ff)
     .byte   (\Base >> 24) & 0xff
