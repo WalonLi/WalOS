@@ -9,18 +9,41 @@
 .text
     jmp LABEL_BEGIN
 
-#   GDT                         BASE            LIMIT           ATTR
+#   GDT                         BASE            LIMIT               ATTR
 LABEL_GDT:      Descriptor      0,              0,              0           
-LABEL_DESC_CODE32:  Descriptor  0,              (SegCode32Len - 1), (DA_C + DA_32)
-LABEL_DESC_VIDEO:   Descriptor  0xb8000,        0xffff,         DA_DRW      
+LABEL_CODE32_DESC:  Descriptor  0,              (Code32SegLen - 1), (DA_C + DA_32)
+LABEL_DATA_DESC:    Descriptor  0,              (DataSegLen - 1),   DA_DRW
+LABEL_STACK_DESC:   Descriptor  0,              (StackSegLen - 1),  (DA_DRW+DA_32)
+LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             DA_DRW      
 
 .set        GdtLen,     . - LABEL_GDT
 GdtPtr:     .2byte      GdtLen - 1
             .4byte      0            
 
 #   GDT Selector
-.set        SelectorCode32, (LABEL_DESC_CODE32 - LABEL_GDT)
-.set        SelectorVideo,  (LABEL_DESC_VIDEO - LABEL_GDT)
+.set        Code32Selector, (LABEL_CODE32_DESC - LABEL_GDT)
+.set        DataSelector,   (LABEL_DATA_DESC - LABEL_GDT)
+.set        StackSelector,  (LABEL_STACK_DESC - LABEL_GDT)
+.set        VideoSelector,  (LABEL_VIDEO_DESC - LABEL_GDT)
+
+
+#####
+LABEL_DATA_SEG:
+PMMsg:      .asciz      "Switch to Protected mode success."
+LDTMsg:     .asciz      "Jump to LDT segment success."
+.set        PMMsgOffset,    (PMMsg - LABEL_DATA_SEG)
+.set        LDTMsgOffset,   (LDTMsg - LABEL_DATA_SEG)
+
+.set        DataSegLen,     (. - LABEL_DATA_SEG)
+#####
+
+
+
+#####
+LABEL_STACK_SEG:
+.space      512,        0
+.set        StackSegLen,    (. - LABEL_STACK_SEG)
+#####
 
 
 
@@ -35,14 +58,13 @@ LABEL_BEGIN:
 
 
     # initial 32 code segment descriptor
-    xor     %eax,       %eax
-    mov     %cs,        %ax
-    shl     $4,         %eax
-    addl    $LABEL_SEG_CODE32, %eax
-    movw    %ax,        (LABEL_DESC_CODE32+2)
-    shr     $16,        %eax
-    movb    %al,        (LABEL_DESC_CODE32+4)
-    movb    %ah,        (LABEL_DESC_CODE32+7)
+    InitDescriptor LABEL_CODE32_SEG, LABEL_CODE32_DESC
+
+    # initial data segment descriptor
+    InitDescriptor LABEL_DATA_SEG, LABEL_DATA_DESC
+
+    # initial stack segment descriptor
+    InitDescriptor LABEL_STACK_SEG, LABEL_STACK_DESC
 
 
     # for loading gdtr
@@ -70,16 +92,24 @@ LABEL_BEGIN:
 
 
     # Mixed Jump
-    ljmpl   $SelectorCode32, $0
+    ljmpl   $Code32Selector, $0
 #.2byte      0xea66
 #.4byte      0x00000000
 #.2byte      SelectorCode32
 
 
-LABEL_SEG_CODE32:
+LABEL_CODE32_SEG:
 .code32
-    mov     $SelectorVideo, %ax
+    mov     $DataSelector, %ax
+    mov     %ax,        %ds     
+
+    mov     $StackSelector, %ax
+    mov     %ax,        %ss  
+
+    mov     $VideoSelector, %ax
     mov     %ax,        %gs
+
+    mov     $(StackSegLen-1), %esp
 
     movl    $((80*11 + 20) *2), %edi
     movb    $0xC,       %ah
@@ -94,4 +124,4 @@ LABEL_SEG_CODE32:
 #    mov %ax,        %gs:((80*0+39)*2)  # col:0 row:39
 #    jmp .
 
-.set        SegCode32Len,   . - LABEL_SEG_CODE32
+.set        Code32SegLen,   . - LABEL_CODE32_SEG

@@ -41,6 +41,23 @@
 .set    DA_386IGate, 0x8e
 .set    DA_386TGate, 0x8f
 
+
+/*  InitDescriptor
+*   
+*   
+*   
+*/
+.macro InitDescriptor   Seg, Desc
+    xor     %eax,       %eax
+    mov     %cs,        %ax
+    shl     $4,         %eax
+    addl    $(\Seg),    %eax
+    movw    %ax,        (\Desc+2)
+    shr     $16,        %eax
+    movb    %al,        (\Desc+4)
+    movb    %ah,        (\Desc+7)
+.endm
+
 /*  Descriptor
 *   Base    : 4byte
 *   Limit   : 4byte
