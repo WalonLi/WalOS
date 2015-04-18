@@ -31,8 +31,11 @@ GdtPtr:     .2byte      GdtLen - 1
 LABEL_DATA_SEG:
 PMMsg:      .asciz      "Switch to Protected mode success."
 LDTMsg:     .asciz      "Jump to LDT segment success."
+ColCount:   .byte       2
+
 .set        PMMsgOffset,    (PMMsg - LABEL_DATA_SEG)
 .set        LDTMsgOffset,   (LDTMsg - LABEL_DATA_SEG)
+.set        ColCountOffset, (ColCount - LABEL_DATA_SEG)
 
 .set        DataSegLen,     (. - LABEL_DATA_SEG)
 #####
@@ -111,10 +114,7 @@ LABEL_CODE32_SEG:
 
     mov     $(StackSegLen-1), %esp
 
-    movl    $((80*11 + 20) *2), %edi
-    movb    $0xC,       %ah
-    movb    $'L',       %al
-    mov     %ax,        %gs:(%edi)
+    call    ShowCStyleMsg
 
     jmp     .
 #    mov $0xb800,    %ax                 # video segment
@@ -124,4 +124,54 @@ LABEL_CODE32_SEG:
 #    mov %ax,        %gs:((80*0+39)*2)  # col:0 row:39
 #    jmp .
 
+
+
+
+
+
+ShowCStyleMsg:
+    push    %eax
+    push    %ebx
+    push    %esi
+    push    %edi
+
+    # Get ColCount value
+    xor     %eax,       %eax
+    movb    %ds:(ColCountOffset), %al
+    movb    $160,       %bl
+    mul     %bl
+    mov     %eax,       %edi
+
+    movb    $0x7,       %ah
+    xor     %esi,       %esi
+    movl    $(PMMsgOffset), %esi
+
+    cld 
+
+Msg_1:
+    # lodsb will push value to al
+    # d flag is 0, then si++
+    # d is 1, then di--
+    lodsb
+    cmp     $0,         %al
+    je      Msg_2
+    mov     %ax,        %gs:(%edi)
+    add     $2,         %edi
+    jmp     Msg_1
+
+Msg_2:
+    
+    incb    %ds:(ColCountOffset)
+
+    pop     %edi
+    pop     %esi
+    pop     %ebx
+    pop     %eax
+
+    ret
+
 .set        Code32SegLen,   . - LABEL_CODE32_SEG
+
+
+
+
