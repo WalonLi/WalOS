@@ -3,7 +3,7 @@
 #   2015/03/29
 #
 
-#include "pm.h"
+.include "pm.s"
 .code16
 
 .text
@@ -14,27 +14,45 @@ LABEL_GDT:      Descriptor      0,              0,              0
 LABEL_CODE32_DESC:  Descriptor  0,              (Code32SegLen - 1), (DA_C + DA_32)
 LABEL_DATA_DESC:    Descriptor  0,              (DataSegLen - 1),   DA_DRW
 LABEL_STACK_DESC:   Descriptor  0,              (StackSegLen - 1),  (DA_DRW+DA_32)
-LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             DA_DRW      
+LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             DA_DRW
+LABEL_LDT_DESC:     Descriptor  0,              (LdtLen - 1),       DA_LDT
 
 .set        GdtLen,     . - LABEL_GDT
 GdtPtr:     .2byte      GdtLen - 1
             .4byte      0            
+
+
+#   LDT
+LABEL_LDT:      
+LABEL_LDT_A_DESC:   Descriptor  0,              (LdtASegLen - 1),  (DA_C + DA_32)
+
+.set        LdtLen,     . - LABEL_LDT
+
+
 
 #   GDT Selector
 .set        Code32Selector, (LABEL_CODE32_DESC - LABEL_GDT)
 .set        DataSelector,   (LABEL_DATA_DESC - LABEL_GDT)
 .set        StackSelector,  (LABEL_STACK_DESC - LABEL_GDT)
 .set        VideoSelector,  (LABEL_VIDEO_DESC - LABEL_GDT)
+.set        LdtSelector,    (LABEL_LDT_DESC - LABEL_GDT)
+
+#   LDT Selector
+.set        LdtASelector,   (LABEL_LDT_A_DESC - LABEL_LDT + SA_TIL)
+
+
 
 
 #####
 LABEL_DATA_SEG:
 PMMsg:      .asciz      "Switch to Protected mode success."
 LDTMsg:     .asciz      "Jump to LDT segment success."
+ErrorMsg:   .asciz      "ERROR Message."
 ColCount:   .byte       2
 
 .set        PMMsgOffset,    (PMMsg - LABEL_DATA_SEG)
 .set        LDTMsgOffset,   (LDTMsg - LABEL_DATA_SEG)
+.set        ErrorMsgOffset, (ErrorMsg - LABEL_DATA_SEG)
 .set        ColCountOffset, (ColCount - LABEL_DATA_SEG)
 
 .set        DataSegLen,     (. - LABEL_DATA_SEG)
@@ -68,6 +86,13 @@ LABEL_BEGIN:
 
     # initial stack segment descriptor
     InitDescriptor LABEL_STACK_SEG, LABEL_STACK_DESC
+
+
+    # initial LDT descriptor
+    InitDescriptor LABEL_LDT, LABEL_LDT_DESC
+
+    # initial LDT_A descriptor in LDT
+    InitDescriptor LABEL_LDT_A_SEG, LABEL_LDT_A_DESC
 
 
     # for loading gdtr
@@ -114,7 +139,14 @@ LABEL_CODE32_SEG:
 
     mov     $(StackSegLen-1), %esp
 
+    movb    $0,         %al
     call    ShowCStyleMsg
+
+    # jump to LDT_A
+    mov     $LdtSelector, %ax
+    lldt    %ax
+
+    lcall   $LdtASelector, $0
 
     jmp     .
 #    mov $0xb800,    %ax                 # video segment
@@ -125,15 +157,34 @@ LABEL_CODE32_SEG:
 #    jmp .
 
 
-
-
-
-
 ShowCStyleMsg:
     push    %eax
     push    %ebx
     push    %esi
     push    %edi
+
+    xor     %esi,       %esi
+    # Get Msg by al
+    cmpb    $0,         %al
+    je      Msg0
+
+    cmpb    $1,         %al
+    je      Msg1
+
+    jmp     MsgN
+
+Msg0:    
+    movl    $(PMMsgOffset), %esi
+    jmp     MsgEnd
+
+Msg1:    
+    movl    $(LDTMsgOffset), %esi
+    jmp     MsgEnd
+
+MsgN:
+    movl    $(LDTMsgOffset), %esi
+
+MsgEnd:
 
     # Get ColCount value
     xor     %eax,       %eax
@@ -143,9 +194,7 @@ ShowCStyleMsg:
     mov     %eax,       %edi
 
     movb    $0x7,       %ah
-    xor     %esi,       %esi
-    movl    $(PMMsgOffset), %esi
-
+    
     cld 
 
 Msg_1:
@@ -160,18 +209,26 @@ Msg_1:
     jmp     Msg_1
 
 Msg_2:
-    
     incb    %ds:(ColCountOffset)
 
     pop     %edi
     pop     %esi
     pop     %ebx
     pop     %eax
-
-    ret
+    ret 
 
 .set        Code32SegLen,   . - LABEL_CODE32_SEG
 
 
+LABEL_LDT_A_SEG:
 
+    mov     $VideoSelector, %ax
+    mov     %ax,        %gs
 
+    movl    $((80*11 + 20) *2), %edi
+    movb    $0xC,       %ah
+    movb    $'L',       %al
+    mov     %ax,        %gs:(%edi)
+
+    lret
+.set        LdtASegLen,     . - LABEL_LDT_A_SEG

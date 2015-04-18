@@ -42,8 +42,30 @@
 .set    DA_386TGate, 0x8f
 
 
-/*  InitDescriptor
-*   
+/*
+*   Selector Attribute
+*
+*   RPL(Requested Privilege Level)
+*
+*   TI(Table Indicator)
+*   TI = 0,  Get descriptor from GDT
+*   TI = 1,  Get descriptor from LDT 
+*
+*   SA_XXXX
+*
+*/
+.set    SA_RPL0,    0
+.set    SA_RPL1,    1
+.set    SA_RPL2,    2
+.set    SA_RPL3,    3
+
+.set    SA_TIG,     0
+.set    SA_TIL,     4
+
+
+
+/*  
+*   InitDescriptor
 *   
 *   
 */
@@ -58,7 +80,9 @@
     movb    %ah,        (\Desc+7)
 .endm
 
-/*  Descriptor
+
+/*  
+*   Descriptor
 *   Base    : 4byte
 *   Limit   : 4byte
 *   Attr    : 2byte
@@ -70,3 +94,7 @@
     .2byte  ((\Limit >> 8) & 0xf00) | (\Attr & 0xf0ff)
     .byte   (\Base >> 24) & 0xff
 .endm
+
+
+
+

@@ -19,13 +19,13 @@ all: boot.img loader.bin
 	@$(ECHO) "***********************************************************************"
 	@$(ECHO) "Please run command \"sudo make copy\" to copy loader.bin into boot.img."
 	@$(ECHO) "***********************************************************************"
-boot.bin: boot.S
-	$(CC) -c boot.S
+boot.bin: boot.s
+	$(CC) -c boot.s
 	$(LD) boot.o -o boot.elf -e c -T$(LDFILES_BOOT)
 	@$(OBJCPY) $(TRIM_FLAGS) boot.elf boot.bin
 
-loader.bin: loader.S
-	$(CC) -c loader.S
+loader.bin: loader.s
+	$(CC) -c loader.s
 	$(LD) loader.o -o loader.elf -T$(LDFILES_DOS)
 	@$(OBJCPY) $(TRIM_FLAGS) loader.elf loader.bin
 
