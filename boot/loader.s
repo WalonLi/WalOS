@@ -14,12 +14,19 @@ LABEL_GDT:      Descriptor      0,              0,              0
 LABEL_CODE32_DESC:  Descriptor  0,              (Code32SegLen - 1), (DA_C + DA_32)
 LABEL_DATA_DESC:    Descriptor  0,              (DataSegLen - 1),   DA_DRW
 LABEL_STACK_DESC:   Descriptor  0,              (StackSegLen - 1),  (DA_DRW + DA_32)
-LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             DA_DRW
+LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             (DA_DRW+DA_DPL3)
+
 LABEL_LDT_DESC:     Descriptor  0,              (LdtLen - 1),       DA_LDT
+
+LABEL_R3_CODE_DESC: Descriptor  0,              (Ring3CodeSegLen - 1), (DA_C + DA_32 + DA_DPL3)
+LABEL_R3_STACK_DESC: Descriptor 0,              (Ring3StackSegLen - 1), (DA_DRWA + DA_32 + DA_DPL3)
+
+LABEL_TSS_DESC:     Descriptor  0,              (TssLen - 1),       DA_386TSS
 
 LABEL_GATE_TEST_DESC: Descriptor 0,             (GateTestSegLen-1), (DA_C + DA_32)
 #   Gate                        Selector            Offset  DCount  Attr
-LABEL_GATE_TEST_CALL: Gate      GateTestSelector,   0,      0,      (DA_386CGate+DA_DPL0)
+LABEL_GATE_TEST_CALL: Gate      GateTestSelector,   0,      0,      (DA_386CGate+DA_DPL3)
+
 
 .set        GdtLen,     . - LABEL_GDT
 GdtPtr:     .2byte      GdtLen - 1
@@ -33,7 +40,7 @@ LABEL_LDT_A_DESC:   Descriptor  0,              (LdtASegLen - 1),  (DA_C + DA_32
 .set        LdtLen,     . - LABEL_LDT
 
 
-LABEL_GATE:
+#LABEL_GATE:
 
 
 
@@ -45,11 +52,15 @@ LABEL_GATE:
 .set        GateTestSelector, (LABEL_GATE_TEST_DESC - LABEL_GDT)
 .set        LdtSelector,    (LABEL_LDT_DESC - LABEL_GDT)
 
+.set        Ring3CodeSelector, (LABEL_R3_CODE_DESC - LABEL_GDT + SA_RPL3)
+.set        Ring3StackSelector, (LABEL_R3_STACK_DESC - LABEL_GDT + SA_RPL3)
+
+.set        TssSelector,    (LABEL_TSS_DESC - LABEL_GDT)
 #   LDT Selector
 .set        LdtASelector,   (LABEL_LDT_A_DESC - LABEL_LDT + SA_TIL)
 
 #   Gate Selector
-.set        GateTestCallSelector,   (LABEL_GATE_TEST_CALL - LABEL_GDT)
+.set        GateTestCallSelector,   (LABEL_GATE_TEST_CALL - LABEL_GDT + SA_RPL3)
 
 
 #####
@@ -75,7 +86,45 @@ LABEL_STACK_SEG:
 .set        StackSegLen,    (. - LABEL_STACK_SEG)
 #####
 
+#####
+LABEL_R3_STACK_SEG:
+.space      512,        0
+.set        Ring3StackSegLen,    (. - LABEL_R3_STACK_SEG)
+#####
 
+#####
+LABEL_TSS:
+    .4byte          0                       #Back
+    .4byte          (StackSegLen - 1)       # ring0 stack
+    .4byte          StackSelector           
+    .4byte          0                       # ring1 stack
+    .4byte          0
+    .4byte          0                       # ring2 stack
+    .4byte          0
+    .4byte          0                       # CR3
+    .4byte          0                       # EIP
+    .4byte          0                       # EFLAGS
+    .4byte          0                       # EAX
+    .4byte          0                       # ECX
+    .4byte          0                       # EDX
+    .4byte          0                       # EBX
+    .4byte          0                       # ESP
+    .4byte          0                       # EBP
+    .4byte          0                       # ESI
+    .4byte          0                       # EDI
+    .4byte          0                       # ES
+    .4byte          0                       # CS
+    .4byte          0                       # SS
+    .4byte          0                       # DS
+    .4byte          0                       # FS
+    .4byte          0                       # GS
+    .4byte          0                       # LDT
+    .2byte          0                       # Test trap sign
+    .2byte          (. - LABEL_TSS + 2)     # I/O base address
+    .byte           0xff                    # I/O end sign
+
+.set        TssLen,         (. - LABEL_TSS)
+#####
 
 LABEL_BEGIN:
 
@@ -104,6 +153,13 @@ LABEL_BEGIN:
 
     # initial LDT_A descriptor in LDT
     InitDescriptor LABEL_LDT_A_SEG, LABEL_LDT_A_DESC
+
+    # initial Ring3 code and stack
+    InitDescriptor LABEL_R3_CODE_SEG, LABEL_R3_CODE_DESC
+    InitDescriptor LABEL_R3_STACK_SEG, LABEL_R3_STACK_DESC
+
+    # initial TSS
+    InitDescriptor LABEL_TSS, LABEL_TSS_DESC
 
 
     # for loading gdtr
@@ -152,6 +208,18 @@ LABEL_CODE32_SEG:
 
     movb    $0,         %al
     call    ShowCStyleMsg
+
+
+    # load TSS
+    mov     $TssSelector, %ax
+    ltr     %ax
+
+    #Ring 3 test
+    push    $Ring3StackSelector
+    push    $(Ring3StackSegLen-1)
+    push    $Ring3CodeSelector
+    push    $0
+    lret
 
     #lcall   $GateTestSelector, $0
     lcall   $GateTestCallSelector, $0
@@ -260,3 +328,18 @@ LABEL_GATE_TEST_SEG:
 
     lret
 .set        GateTestSegLen,     . - LABEL_GATE_TEST_SEG
+
+
+LABEL_R3_CODE_SEG:
+    mov     $VideoSelector, %ax
+    mov     %ax,        %gs
+
+    movl    $((80*13 + 20) *2), %edi
+    movb    $0xC,       %ah
+    movb    $'3',       %al
+    mov     %ax,        %gs:(%edi)
+
+    lcall   $GateTestCallSelector, $0
+    jmp     .
+
+.set        Ring3CodeSegLen,     . - LABEL_R3_CODE_SEG
