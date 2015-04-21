@@ -14,17 +14,17 @@
 *   A   :   Access
 */
 
-// 32 bit
+# 32 bit
 .set    DA_32,      0x4000
 
 
-// DPL(Discriptor Privilege Level)
+# DPL(Discriptor Privilege Level)
 .set    DA_DPL0,    0x0
 .set    DA_DPL1,    0x20
 .set    DA_DPL2,    0x40
 .set    DA_DPL3,    0x60
 
-// Segment type
+# Segment type
 .set    DA_DR,      0x90
 .set    DA_DRW,     0x92
 .set    DA_DRWA,    0x93
@@ -96,5 +96,18 @@
 .endm
 
 
+/*  
+*   Gate
+*   Selector    : 2byte
+*   Offset      : 4byte
+*   DCount      : 1byte
+*   Attr        : 1byte
+*/
+.macro Gate Selector, Offset, DCount, Attr
+    .2byte (\Offset & 0xFFFF)
+    .2byte \Selector
+    .2byte (\DCount & 0x1F) | ((\Attr << 8) & 0xFF00)
+    .2byte ((\Offset >> 16) & 0xFFFF)
+.endm
 
 

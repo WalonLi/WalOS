@@ -13,9 +13,13 @@
 LABEL_GDT:      Descriptor      0,              0,              0           
 LABEL_CODE32_DESC:  Descriptor  0,              (Code32SegLen - 1), (DA_C + DA_32)
 LABEL_DATA_DESC:    Descriptor  0,              (DataSegLen - 1),   DA_DRW
-LABEL_STACK_DESC:   Descriptor  0,              (StackSegLen - 1),  (DA_DRW+DA_32)
+LABEL_STACK_DESC:   Descriptor  0,              (StackSegLen - 1),  (DA_DRW + DA_32)
 LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             DA_DRW
 LABEL_LDT_DESC:     Descriptor  0,              (LdtLen - 1),       DA_LDT
+
+LABEL_GATE_TEST_DESC: Descriptor 0,             (GateTestSegLen-1), (DA_C + DA_32)
+#   Gate                        Selector            Offset  DCount  Attr
+LABEL_GATE_TEST_CALL: Gate      GateTestSelector,   0,      0,      (DA_386CGate+DA_DPL0)
 
 .set        GdtLen,     . - LABEL_GDT
 GdtPtr:     .2byte      GdtLen - 1
@@ -29,18 +33,23 @@ LABEL_LDT_A_DESC:   Descriptor  0,              (LdtASegLen - 1),  (DA_C + DA_32
 .set        LdtLen,     . - LABEL_LDT
 
 
+LABEL_GATE:
+
+
 
 #   GDT Selector
 .set        Code32Selector, (LABEL_CODE32_DESC - LABEL_GDT)
 .set        DataSelector,   (LABEL_DATA_DESC - LABEL_GDT)
 .set        StackSelector,  (LABEL_STACK_DESC - LABEL_GDT)
 .set        VideoSelector,  (LABEL_VIDEO_DESC - LABEL_GDT)
+.set        GateTestSelector, (LABEL_GATE_TEST_DESC - LABEL_GDT)
 .set        LdtSelector,    (LABEL_LDT_DESC - LABEL_GDT)
 
 #   LDT Selector
 .set        LdtASelector,   (LABEL_LDT_A_DESC - LABEL_LDT + SA_TIL)
 
-
+#   Gate Selector
+.set        GateTestCallSelector,   (LABEL_GATE_TEST_CALL - LABEL_GDT)
 
 
 #####
@@ -87,6 +96,8 @@ LABEL_BEGIN:
     # initial stack segment descriptor
     InitDescriptor LABEL_STACK_SEG, LABEL_STACK_DESC
 
+    # initial gate test segment descriptor
+    InitDescriptor LABEL_GATE_TEST_SEG, LABEL_GATE_TEST_DESC
 
     # initial LDT descriptor
     InitDescriptor LABEL_LDT, LABEL_LDT_DESC
@@ -141,6 +152,9 @@ LABEL_CODE32_SEG:
 
     movb    $0,         %al
     call    ShowCStyleMsg
+
+    #lcall   $GateTestSelector, $0
+    lcall   $GateTestCallSelector, $0
 
     # jump to LDT_A
     mov     $LdtSelector, %ax
@@ -232,3 +246,17 @@ LABEL_LDT_A_SEG:
 
     lret
 .set        LdtASegLen,     . - LABEL_LDT_A_SEG
+
+
+LABEL_GATE_TEST_SEG:
+
+    mov     $VideoSelector, %ax
+    mov     %ax,        %gs
+
+    movl    $((80*12 + 20) *2), %edi
+    movb    $0xC,       %ah
+    movb    $'G',       %al
+    mov     %ax,        %gs:(%edi)
+
+    lret
+.set        GateTestSegLen,     . - LABEL_GATE_TEST_SEG
