@@ -282,7 +282,7 @@ MsgEnd:
 Msg_1:
     # lodsb will push value to al
     # d flag is 0, then si++
-    # d is 1, then di--
+    # d is 1, then si--
     lodsb
     cmp     $0,         %al
     je      Msg_2

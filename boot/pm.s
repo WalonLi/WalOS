@@ -63,6 +63,13 @@
 .set    SA_TIL,     4
 
 
+# Page Attributes
+.set    PG_P,    1
+.set    PG_RWR,  0
+.set    PG_RWW,  2
+.set    PG_USS,  0
+.set    PG_USU,  4
+
 
 /*  
 *   InitDescriptor
