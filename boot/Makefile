@@ -6,7 +6,7 @@
 CC=gcc
 LD=ld
 
-LDFILES_BOOT=walos_x86.ld
+LDFILES_BOOT=walos_x86_boot.ld
 LDFILES_DOS=walos_x86_dos.ld
 
 OBJCPY=objcopy

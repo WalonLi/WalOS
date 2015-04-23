@@ -16,7 +16,10 @@
 
 
 .text
-# Floppy header of FAT12 
+###########################
+#   FAT 12 table          #
+#                         #
+###########################
     jmp LABEL_START                     # jmp boot 
     nop                                 # nop is required 
 BS_OEMName:     .ascii      "WALON LI"  # OEM String, 8 bytes required 
@@ -40,6 +43,34 @@ BS_VolLab:      .ascii      "WalOS  0.01" # Volume label, 11 bytes required
 BS_FileSysType: .ascii      "FAT12   "  # File system type, 8 bytes required 
 
 
+###########################
+#   Global data           #
+#                         #
+###########################
+gRootDirSizeForLoop:    .2byte  RootDirSectors
+gSectorNo:              .2byte  0               # Sector number to read
+gOdd:                   .byte   0               # odd or even?
+
+LoaderName:     .asciz      "LOADER  BIN"
+PrintCount:     .byte       0
+
+# Boot string table
+Booting:        .ascii      "Booting......"
+LoadSuccess:    .ascii      "Load success."
+LoadFail:       .ascii      "Load Fail...."
+.set            MsgLen,     13
+
+
+
+##########################################################################################
+#   LABEL_BEGIN             
+#                            
+#   1. Clean screen and show "Booting...".
+#   2. Reset floppy.
+#   3. Search Loader.bin in root dir.
+#      If found, get FAT entry and load n sector to memory, else show "Not Found",
+#   4. Jump to Loader.bin
+##########################################################################################
 LABEL_START:
     mov     %cs,    %ax
     mov     %ax,    %ds
@@ -61,7 +92,6 @@ LABEL_START:
     xor     %ah,    %ah
     xor     %dh,    %dh
     int     $0x13
-#    jmp     .                           # infinite loop
 
 
     movw    $SecNoOfRootDir, (gSectorNo)   
@@ -168,28 +198,13 @@ LABEL_FILE_LOADED:
  
 
 
-# data 
-#
-gRootDirSizeForLoop:    .2byte  RootDirSectors
-gSectorNo:              .2byte  0               # Sector number to read
-gOdd:                   .byte   0               # odd or even?
-
-LoaderName:     .asciz      "LOADER  BIN"
-PrintCount:     .byte       0
-
-# Boot string table
-Booting:        .ascii      "Booting......"
-LoadSuccess:    .ascii      "Load success."
-LoadFail:       .ascii      "Load Fail...."
-.set            MsgLen,     13
 
 
 
-
-#
-#   ClearScreen
-#
-
+##########################################################
+#   ClearScreen          
+#                                      
+##########################################################
 ClearScreen:
     mov     $0x600,     %ax
     mov     $0x700,     %bx
@@ -198,9 +213,12 @@ ClearScreen:
     int     $0x10
     ret
 
-#
-#   PrintDot
-#
+
+
+##########################################################
+#   PrintDot       
+#                                      
+##########################################################
 PrintDot:
     push    %ax
     push    %bx
@@ -213,11 +231,12 @@ PrintDot:
     ret
 
 
-#
-#   ShowMsg
-#
-#   dh = Boot string table index
 
+##########################################################
+#   ShowMsg          
+#        
+#   dh = Boot string table index                    
+##########################################################
 ShowMsg:
     mov     $MsgLen,    %ax
     mul     %dh
@@ -257,7 +276,7 @@ MsgFlag:
 
 
 
-#
+######################################################
 #   ReadSector
 #   	
 #   Read %cl sector from %ax floppy sector to es:bx
@@ -266,7 +285,7 @@ MsgFlag:
 #   z+1 = start sector number
 #   y/BPB_NumHeads = cylinder number
 #   y & 1 = magnetic header
-
+######################################################
 ReadSector:
     push    %ebp
     mov     %esp,   %ebp
@@ -296,11 +315,10 @@ Reading:
     pop     %ebp
     ret
 
-
-#
+######################################################
 #   GetFATEntry
 #
-
+######################################################
 GetFATEntry:
     push    %es
     push    %bx
@@ -337,6 +355,10 @@ LABEL_GET_FAT_ENTRY_OK:
     ret
 
 
+################################
+#   Boot signature(for BIOS)
+#
+################################
 .org 510            # fill null opcode until offset 510
 .word 0xaa55        # end mark
 
