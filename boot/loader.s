@@ -105,7 +105,9 @@ _MemChkBuf: .space      256,        0
 PMMsg:      .asciz      "Switch to Protected mode success."
 LDTMsg:     .asciz      "Jump to LDT segment success."
 MemInfoMsg: .asciz      "BaseAddrL   BaseAddrH   LengthLow   LengthHigh  Type"
-MemMsg:     .asciz      "00000000    00000000    00000000    00000000    00000000"
+MemDataMsg: .asciz      "00000000    00000000    00000000    00000000    00000000"
+MemSizeMsg: .asciz      "RAM size:   00000000"   
+
 ErrorMsg:   .asciz      "ERROR Message."
 MemByteCnt: .byte       0
 ColCount:   .byte       2
@@ -125,7 +127,8 @@ ColCount:   .byte       2
 .set        PMMsgOffset,    (PMMsg - LABEL_DATA_SEG)
 .set        LDTMsgOffset,   (LDTMsg - LABEL_DATA_SEG)
 .set        MemInfoMsgOffset, (MemInfoMsg - LABEL_DATA_SEG)
-.set        MemMsgOffset,   (MemMsg - LABEL_DATA_SEG)
+.set        MemDataMsgOffset,   (MemDataMsg - LABEL_DATA_SEG)
+.set        MemSizeMsgOffset,   (MemSizeMsg - LABEL_DATA_SEG)
 .set        ErrorMsgOffset, (ErrorMsg - LABEL_DATA_SEG)
 .set        ColCountOffset, (ColCount - LABEL_DATA_SEG)
 
@@ -376,6 +379,9 @@ ShowCStyleMsg:
     cmpb    $3,         %al
     je      Msg3
 
+    cmpb    $4,         %al
+    je      Msg4
+
     jmp     MsgN
 
 Msg0:    
@@ -391,7 +397,11 @@ Msg2:
     jmp     MsgEnd
 
 Msg3:
-    movl    $MemMsgOffset, %esi
+    movl    $MemDataMsgOffset, %esi
+    jmp     MsgEnd
+
+Msg4:
+    movl    $MemSizeMsgOffset, %esi
     jmp     MsgEnd
 
 MsgN:
@@ -442,14 +452,16 @@ ShowMemInfo:
 
     movl    $MemChkBuf,     %esi
     movl    (MCRNumber),    %ecx
-ShowMemInfo.1:
+ShowMemInfo_1:
     push    %edi
     push    %ecx
 
-    mov     $MemMsgOffset,  %edi
+    mov     $MemDataMsgOffset,  %edi
     mov     $5,             %edx
 x_1:
     lodsl
+    call    SetMemData
+      
     push    %eax
     mov     $4,             %ecx
 x_2:
@@ -487,11 +499,18 @@ shf_end:
     mov     $3,             %al
     call    ShowCStyleMsg
 
-    loop    ShowMemInfo.1
+    call    CalMemSize
+
+    loop    ShowMemInfo_1
+
+    mov     $4,             %al
+    call    ShowCStyleMsg
 
     pop     %ecx
     pop     %edi
     pop     %esi
+
+
     ret
 
 
@@ -531,6 +550,43 @@ AsciiEnd.2:
     pop     %bx
     ret
 
+
+SetMemData:
+    # calculate ram size
+    cmp     $5,             %edx
+    je      set_base
+
+    cmp     $3,             %edx
+    je      set_length
+
+    cmp     $1,             %edx
+    je      set_type
+    jmp     set_end
+
+set_base:
+    movl    %eax,           (BaseAddrLow)
+    jmp     set_end
+set_length:
+    movl    %eax,           (LengthLow)
+    jmp     set_end
+set_type:
+    movl    %eax,           (Type)
+set_end:  
+    ret
+
+
+CalMemSize:
+    cmpl    $1,             (Type)
+    jne     cal_end
+
+    movl    (BaseAddrLow),  %eax
+    addl    (LengthLow),    %eax
+    cmpl    (MemSize),      %eax
+    jb      cal_end
+
+    movl    %eax,           (MemSize)
+cal_end:
+    ret  
 
 
 .set        Code32SegLen,   . - LABEL_CODE32_SEG
