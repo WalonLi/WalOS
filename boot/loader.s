@@ -87,13 +87,45 @@ LABEL_LDT_A_DESC:   Descriptor  0,              (LdtASegLen - 1),  (DA_C + DA_32
 #   R/W                 #
 #########################
 LABEL_DATA_SEG:
+
+# 16 bit mode data
+_MemSize:   .4byte      0
+_MCRNumber: .4byte      0                   # memory check result
+_ARDStruct:                                 # Address Range Descriptor Structure
+    _BaseAddrLow:     .4byte      0
+    _BaseAddrHigh:    .4byte      0
+    _LengthLow:       .4byte      0
+    _LengthHigh:      .4byte      0
+    _Type:            .4byte      0
+_MemChkBuf: .space      256,        0
+
+
+
+# 32 bit mode data
 PMMsg:      .asciz      "Switch to Protected mode success."
 LDTMsg:     .asciz      "Jump to LDT segment success."
+MemInfoMsg: .asciz      "BaseAddrL   BaseAddrH   LengthLow   LengthHigh  Type"
+MemMsg:     .asciz      "00000000    00000000    00000000    00000000    00000000"
 ErrorMsg:   .asciz      "ERROR Message."
+MemByteCnt: .byte       0
 ColCount:   .byte       2
+
+
+
+.set        MemSize,        (_MemSize - LABEL_DATA_SEG)
+.set        MCRNumber,      (_MCRNumber - LABEL_DATA_SEG)
+.set        ARDStruct,      (_ARDStruct - LABEL_DATA_SEG)
+    .set            BaseAddrLow,     (_BaseAddrLow - LABEL_DATA_SEG)
+    .set            BaseAddrHigh,    (_BaseAddrHigh - LABEL_DATA_SEG)
+    .set            LengthLow,       (_LengthLow - LABEL_DATA_SEG)
+    .set            LengthHigh,      (_LengthHigh - LABEL_DATA_SEG)
+    .set            Type,            (_Type - LABEL_DATA_SEG)
+.set        MemChkBuf,      (_MemChkBuf - LABEL_DATA_SEG)
 
 .set        PMMsgOffset,    (PMMsg - LABEL_DATA_SEG)
 .set        LDTMsgOffset,   (LDTMsg - LABEL_DATA_SEG)
+.set        MemInfoMsgOffset, (MemInfoMsg - LABEL_DATA_SEG)
+.set        MemMsgOffset,   (MemMsg - LABEL_DATA_SEG)
 .set        ErrorMsgOffset, (ErrorMsg - LABEL_DATA_SEG)
 .set        ColCountOffset, (ColCount - LABEL_DATA_SEG)
 
@@ -186,7 +218,27 @@ LABEL_BEGIN:
     mov     %ax,        %es
     mov     $0x100,     %sp
 
+    
+    # Get physical memory size and ARD struct
+    mov     $0,         %ebx
+    mov     $_MemChkBuf, %edi
+GetMemInfoLoop:
+    mov     $0xe820,    %eax
+    mov     $20,        %ecx
+    mov     $0x534d4150, %edx           # 'SMAP'
+    int     $0x15
+    jc      MemChkFail
+    add     $20,        %di
+    incl    _MCRNumber
+    cmp     $0,         %ebx
+    jne     GetMemInfoLoop
+    jmp     MemChkOk
 
+MemChkFail:
+    movl    $0,         _MCRNumber
+MemChkOk:
+
+    
     # initial 32 code segment descriptor
     InitDescriptor LABEL_CODE32_SEG, LABEL_CODE32_DESC
 
@@ -211,7 +263,7 @@ LABEL_BEGIN:
 
     # initial TSS
     InitDescriptor LABEL_TSS, LABEL_TSS_DESC
-
+    
 
     # for loading gdtr
     xor     %eax,       %eax
@@ -268,6 +320,11 @@ LABEL_CODE32_SEG:
     movb    $0,         %al
     call    ShowCStyleMsg
 
+    movb    $2,         %al
+    call    ShowCStyleMsg
+
+    call    ShowMemInfo
+
 
     # load TSS
     mov     $TssSelector, %ax
@@ -316,18 +373,32 @@ ShowCStyleMsg:
     cmpb    $1,         %al
     je      Msg1
 
+    cmpb    $2,         %al
+    je      Msg2
+
+    cmpb    $3,         %al
+    je      Msg3
+
     jmp     MsgN
 
 Msg0:    
-    movl    $(PMMsgOffset), %esi
+    movl    $PMMsgOffset, %esi
     jmp     MsgEnd
 
 Msg1:    
-    movl    $(LDTMsgOffset), %esi
+    movl    $LDTMsgOffset, %esi
+    jmp     MsgEnd
+
+Msg2:
+    movl    $MemInfoMsgOffset, %esi
+    jmp     MsgEnd
+
+Msg3:
+    movl    $MemMsgOffset, %esi
     jmp     MsgEnd
 
 MsgN:
-    movl    $(LDTMsgOffset), %esi
+    movl    $LDTMsgOffset, %esi
 
 MsgEnd:
 
@@ -362,8 +433,118 @@ Msg_2:
     pop     %eax
     ret 
 
+
+
+ShowMemInfo:
+    push    %esi
+    push    %edi
+    push    %ecx
+
+    cld
+
+    movl    $MemChkBuf,      %esi
+    #movl    MCRNumber,      %ecx
+ShowMemInfo.1:
+    
+    #mov     $ARDStruct,     %edi
+
+
+    push    %edi
+    push    %ecx
+
+    mov     $MemMsgOffset,   %edi
+    mov     $5,             %edx
+x_1:
+    #xor     %eax,           %eax
+    lodsl
+    mov     $4,             %ecx
+x_2:
+    push    %ax
+    call    ALtoAscii
+    
+    movb    %ah,             %ds:(%edi)
+    inc     %edi
+    movb    %al,             %ds:(%edi)
+    inc     %edi
+    pop     %ax
+
+    # next
+    shr     $8,             %eax
+    loop    x_2
+
+    add     $4,             %edi
+    dec     %edx
+    cmp     $0,             %edx
+    jne     x_1
+
+    pop     %ecx
+    pop     %edi
+
+    mov     $3,             %al
+    call    ShowCStyleMsg
+
+    #loop    ShowMemInfo.1
+
+    pop     %ecx
+    pop     %edi
+    pop     %esi
+    ret
+
+
+ALtoAscii:
+    push    %bx
+    push    %ax
+
+    shr     $4,             %al
+    and     $0xf,           %al
+
+    cmpb    $0xa,           %al
+    jb      AsciiAdd30
+    jmp     AsciiAdd41
+AsciiAdd30:
+    add     $0x30,          %al
+    jmp     AsciiEnd
+AsciiAdd41:
+    add     $0x37,          %al
+    jmp     AsciiEnd
+AsciiEnd:
+    mov     %al,            %bh
+
+    pop     %ax
+    and     $0xf,           %al
+
+    cmpb    $0xa,           %al
+    jb      AsciiAdd30.2
+    jmp     AsciiAdd41.2
+AsciiAdd30.2:
+    add     $0x30,          %al
+    jmp     AsciiEnd.2
+AsciiAdd41.2:
+    add     $0x37,          %al
+    jmp     AsciiEnd.2
+AsciiEnd.2:
+    mov     %al,            %bl
+    mov     %bx,            %ax
+
+    pop     %bx
+    ret
+
+
+
 .set        Code32SegLen,   . - LABEL_CODE32_SEG
 
+
+
+
+    #and     $0xf            %al
+
+    #cmp     $9,             %al
+
+
+    #add     $0x30,          %al
+    
+    # Replace string
+    #movb     %al,           %ds:(MemMsgOffset)
 
 
 ##########################################################
@@ -441,3 +622,26 @@ LABEL_R3_CODE_SEG:
 .set        Ring3CodeSegLen,     . - LABEL_R3_CODE_SEG
 
 
+
+
+    /**
+    #push    %eax
+    and     $0xf,           %al
+    call    ConvertALtoAscii
+    movb    %al,            %ds:(MemMsgOffset)
+
+    #pop     %ax
+    shr     $4,             %al
+    call    ConvertALtoAscii
+    movb    %al,            %ds:(MemMsgOffset+1)
+
+    #pop     %ax
+    shr     $4,             %al
+    call    ConvertALtoAscii
+    movb    %al,            %ds:(MemMsgOffset+1)
+
+    #pop     %ax
+    shr     $4,             %al
+    call    ConvertALtoAscii
+    movb    %al,            %ds:(MemMsgOffset+1)
+    **/

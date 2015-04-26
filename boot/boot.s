@@ -268,7 +268,7 @@ MsgFlag:
     int     $0x10
 
     # PrintCount++
-    incb    (PrintCount)
+    incb    PrintCount
     #mov     (PrintCount), %ah
     #add     $1,         %ah
     #mov     %ah,        (PrintCount)
