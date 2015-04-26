@@ -320,9 +320,6 @@ LABEL_CODE32_SEG:
     movb    $0,         %al
     call    ShowCStyleMsg
 
-    movb    $2,         %al
-    call    ShowCStyleMsg
-
     call    ShowMemInfo
 
 
@@ -440,38 +437,45 @@ ShowMemInfo:
     push    %edi
     push    %ecx
 
-    cld
+    movb    $2,         %al
+    call    ShowCStyleMsg
 
-    movl    $MemChkBuf,      %esi
-    #movl    MCRNumber,      %ecx
+    movl    $MemChkBuf,     %esi
+    movl    (MCRNumber),    %ecx
 ShowMemInfo.1:
-    
-    #mov     $ARDStruct,     %edi
-
-
     push    %edi
     push    %ecx
 
-    mov     $MemMsgOffset,   %edi
+    mov     $MemMsgOffset,  %edi
     mov     $5,             %edx
 x_1:
-    #xor     %eax,           %eax
     lodsl
+    push    %eax
     mov     $4,             %ecx
 x_2:
-    push    %ax
-    call    ALtoAscii
-    
-    movb    %ah,             %ds:(%edi)
-    inc     %edi
-    movb    %al,             %ds:(%edi)
-    inc     %edi
-    pop     %ax
+    movl    (%esp),         %eax
 
-    # next
+    cmp     $1,             %ecx
+    je      shf_end
     shr     $8,             %eax
+
+    cmp     $2,             %ecx
+    je      shf_end
+    shr     $8,             %eax
+
+    cmp     $3,             %ecx
+    je      shf_end
+    shr     $8,             %eax
+shf_end:
+
+    call    ALtoAscii
+    movb    %ah,            %ds:(%edi)
+    inc     %edi
+    movb    %al,            %ds:(%edi)
+    inc     %edi
     loop    x_2
 
+    add     $4,             %esp
     add     $4,             %edi
     dec     %edx
     cmp     $0,             %edx
@@ -483,7 +487,7 @@ x_2:
     mov     $3,             %al
     call    ShowCStyleMsg
 
-    #loop    ShowMemInfo.1
+    loop    ShowMemInfo.1
 
     pop     %ecx
     pop     %edi
@@ -500,13 +504,12 @@ ALtoAscii:
 
     cmpb    $0xa,           %al
     jb      AsciiAdd30
-    jmp     AsciiAdd41
+    jmp     AsciiAdd37
 AsciiAdd30:
     add     $0x30,          %al
     jmp     AsciiEnd
-AsciiAdd41:
+AsciiAdd37:
     add     $0x37,          %al
-    jmp     AsciiEnd
 AsciiEnd:
     mov     %al,            %bh
 
@@ -515,13 +518,12 @@ AsciiEnd:
 
     cmpb    $0xa,           %al
     jb      AsciiAdd30.2
-    jmp     AsciiAdd41.2
+    jmp     AsciiAdd37.2
 AsciiAdd30.2:
     add     $0x30,          %al
     jmp     AsciiEnd.2
-AsciiAdd41.2:
+AsciiAdd37.2:
     add     $0x37,          %al
-    jmp     AsciiEnd.2
 AsciiEnd.2:
     mov     %al,            %bl
     mov     %bx,            %ax
@@ -534,17 +536,6 @@ AsciiEnd.2:
 .set        Code32SegLen,   . - LABEL_CODE32_SEG
 
 
-
-
-    #and     $0xf            %al
-
-    #cmp     $9,             %al
-
-
-    #add     $0x30,          %al
-    
-    # Replace string
-    #movb     %al,           %ds:(MemMsgOffset)
 
 
 ##########################################################
@@ -621,27 +612,3 @@ LABEL_R3_CODE_SEG:
 
 .set        Ring3CodeSegLen,     . - LABEL_R3_CODE_SEG
 
-
-
-
-    /**
-    #push    %eax
-    and     $0xf,           %al
-    call    ConvertALtoAscii
-    movb    %al,            %ds:(MemMsgOffset)
-
-    #pop     %ax
-    shr     $4,             %al
-    call    ConvertALtoAscii
-    movb    %al,            %ds:(MemMsgOffset+1)
-
-    #pop     %ax
-    shr     $4,             %al
-    call    ConvertALtoAscii
-    movb    %al,            %ds:(MemMsgOffset+1)
-
-    #pop     %ax
-    shr     $4,             %al
-    call    ConvertALtoAscii
-    movb    %al,            %ds:(MemMsgOffset+1)
-    **/
