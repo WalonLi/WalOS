@@ -354,6 +354,8 @@ LABEL_CODE32_SEG:
 #    mov %ax,        %gs:((80*0+39)*2)  # col:0 row:39
 #    jmp .
 
+
+
 ##########################################################
 #   ShowCStyleMsg           
 #                           
@@ -368,46 +370,46 @@ ShowCStyleMsg:
     xor     %esi,       %esi
     # Get Msg by al
     cmpb    $0,         %al
-    je      Msg0
+    je      msg_0
 
     cmpb    $1,         %al
-    je      Msg1
+    je      msg_1
 
     cmpb    $2,         %al
-    je      Msg2
+    je      msg_2
 
     cmpb    $3,         %al
-    je      Msg3
+    je      msg_3
 
     cmpb    $4,         %al
-    je      Msg4
+    je      msg_4
 
-    jmp     MsgN
+    jmp     msg_error
 
-Msg0:    
+msg_0:    
     movl    $PMMsgOffset, %esi
-    jmp     MsgEnd
+    jmp     msg_end
 
-Msg1:    
+msg_1:    
     movl    $LDTMsgOffset, %esi
-    jmp     MsgEnd
+    jmp     msg_end
 
-Msg2:
+msg_2:
     movl    $MemInfoMsgOffset, %esi
-    jmp     MsgEnd
+    jmp     msg_end
 
-Msg3:
+msg_3:
     movl    $MemDataMsgOffset, %esi
-    jmp     MsgEnd
+    jmp     msg_end
 
-Msg4:
+msg_4:
     movl    $MemSizeMsgOffset, %esi
-    jmp     MsgEnd
+    jmp     msg_end
 
-MsgN:
-    movl    $LDTMsgOffset, %esi
+msg_error:
+    movl    $ErrorMsgOffset, %esi
 
-MsgEnd:
+msg_end:
 
     # Get ColCount value
     xor     %eax,       %eax
@@ -420,18 +422,15 @@ MsgEnd:
     
     cld 
 
-Msg_1:
-    # lodsb will push value to al
-    # d flag is 0, then si++
-    # d is 1, then si--
+show_msg:
     lodsb
     cmp     $0,         %al
-    je      Msg_2
+    je      show_done
     mov     %ax,        %gs:(%edi)
     add     $2,         %edi
-    jmp     Msg_1
+    jmp     show_msg
+show_done:
 
-Msg_2:
     incb    %ds:(ColCountOffset)
 
     pop     %edi
@@ -441,7 +440,12 @@ Msg_2:
     ret 
 
 
-
+################################################################
+#   ShowMemInfo           
+#                            
+#   MemChkBuf have memory ARD(Address Range Descriptor) struct
+#   We parse this structure and show memory information on screen
+################################################################
 ShowMemInfo:
     push    %esi
     push    %edi
@@ -452,7 +456,7 @@ ShowMemInfo:
 
     movl    $MemChkBuf,     %esi
     movl    (MCRNumber),    %ecx
-ShowMemInfo_1:
+mem_info:
     push    %edi
     push    %ecx
 
@@ -461,7 +465,6 @@ ShowMemInfo_1:
 x_1:
     lodsl
     call    SetMemData
-      
     push    %eax
     mov     $4,             %ecx
 x_2:
@@ -498,22 +501,22 @@ shf_end:
 
     mov     $3,             %al
     call    ShowCStyleMsg
-
-    call    CalMemSize
-
-    loop    ShowMemInfo_1
-
-    mov     $4,             %al
-    call    ShowCStyleMsg
+    call    CalculateMemSize
+    loop    mem_info
 
     pop     %ecx
     pop     %edi
     pop     %esi
-
-
     ret
 
 
+################################################################
+#   ALtoAscii           
+#                            
+#   in : AL
+#   out: AX
+#   Convert AL to ascii code and store into AX
+################################################################
 ALtoAscii:
     push    %bx
     push    %ax
@@ -522,70 +525,78 @@ ALtoAscii:
     and     $0xf,           %al
 
     cmpb    $0xa,           %al
-    jb      AsciiAdd30
-    jmp     AsciiAdd37
-AsciiAdd30:
+    jb      add_ascii_30_1
+    jmp     add_ascii_37_1
+add_ascii_30_1:
     add     $0x30,          %al
-    jmp     AsciiEnd
-AsciiAdd37:
+    jmp     add_ascii_end_1
+add_ascii_37_1:
     add     $0x37,          %al
-AsciiEnd:
+add_ascii_end_1:
     mov     %al,            %bh
 
     pop     %ax
     and     $0xf,           %al
 
     cmpb    $0xa,           %al
-    jb      AsciiAdd30.2
-    jmp     AsciiAdd37.2
-AsciiAdd30.2:
+    jb      add_ascii_30_2
+    jmp     add_ascii_37_2
+add_ascii_30_2:
     add     $0x30,          %al
-    jmp     AsciiEnd.2
-AsciiAdd37.2:
+    jmp     add_ascii_end_2
+add_ascii_37_2:
     add     $0x37,          %al
-AsciiEnd.2:
+add_ascii_end_2:
     mov     %al,            %bl
     mov     %bx,            %ax
 
     pop     %bx
     ret
 
-
+################################################################
+#   SetMemData           
+#                            
+#   Set memory data to buffer by edx index
+################################################################
 SetMemData:
-    # calculate ram size
+    # set memory data
     cmp     $5,             %edx
-    je      set_base
+    je      set_mem_base
 
     cmp     $3,             %edx
-    je      set_length
+    je      set_mem_length
 
     cmp     $1,             %edx
-    je      set_type
-    jmp     set_end
+    je      set_mem_type
+    jmp     set_mem_end
 
-set_base:
+set_mem_base:
     movl    %eax,           (BaseAddrLow)
-    jmp     set_end
-set_length:
+    jmp     set_mem_end
+set_mem_length:
     movl    %eax,           (LengthLow)
-    jmp     set_end
-set_type:
+    jmp     set_mem_end
+set_mem_type:
     movl    %eax,           (Type)
-set_end:  
+set_mem_end:  
     ret
 
-
-CalMemSize:
+################################################################
+#   CalculateMemSize           
+#                            
+#   Calulate memory size by base/length, stored into MemSize
+################################################################
+CalculateMemSize:
     cmpl    $1,             (Type)
-    jne     cal_end
+    jne     cal_mem_end
 
     movl    (BaseAddrLow),  %eax
     addl    (LengthLow),    %eax
     cmpl    (MemSize),      %eax
-    jb      cal_end
+    jb      cal_mem_end
 
     movl    %eax,           (MemSize)
-cal_end:
+cal_mem_end:
     ret  
 
 
