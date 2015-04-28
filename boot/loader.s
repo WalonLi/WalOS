@@ -38,7 +38,11 @@ LABEL_R3_STACK_DESC: Descriptor 0,              (Ring3StackLen - 1), (DA_DRWA + 
 
 LABEL_TSS_DESC:     Descriptor  0,              (TssLen - 1),       DA_386TSS
 
-LABEL_CG_DEST_DESC: Descriptor  0,              (CGDestSegLen-1), (DA_C + DA_32)
+# don't initial in code 16
+LABEL_PAGE_DIR_DESC: Descriptor PageDirBase,    4095,               DA_DRW
+LABEL_PAGE_TBL_DESC: Descriptor PageTblBase,    1023,               (DA_DRW + DA_LIMIT_4K)
+
+LABEL_CG_DEST_DESC: Descriptor  0,              (CGDestSegLen-1),   (DA_C + DA_32)
 
 #   Gate                        Selector            Offset  DCount  Attr
 LABEL_CALL_GATE:    Gate        CGDestSelector,     0,      0,      (DA_386CGate+DA_DPL3)
@@ -72,6 +76,9 @@ LABEL_LDT_A_DESC:   Descriptor  0,              (LdtASegLen - 1),  (DA_C + DA_32
 .set        Ring3StackSelector, (LABEL_R3_STACK_DESC - LABEL_GDT + SA_RPL3)
 
 .set        TssSelector,    (LABEL_TSS_DESC - LABEL_GDT)
+.set        PageDirSelector, (LABEL_PAGE_DIR_DESC - LABEL_GDT)
+.set        PageTblSelector, (LABEL_PAGE_TBL_DESC - LABEL_GDT)
+
 #   LDT Selector
 .set        LdtASelector,   (LABEL_LDT_A_DESC - LABEL_LDT + SA_TIL)
 
@@ -266,6 +273,7 @@ MemChkOk:
 
     # initial TSS
     InitDescriptor LABEL_TSS, LABEL_TSS_DESC
+
     
 
     # for loading gdtr
@@ -323,7 +331,9 @@ LABEL_CODE32_SEG:
     movb    $0,         %al
     call    ShowCStyleMsg
 
+    # Sizing memory and load page table
     call    ShowMemInfo
+    call    SetupPageMechanism
 
 
     # load TSS
@@ -510,7 +520,6 @@ shf_end:
     pop     %edi
     pop     %esi
 
-
     ret
 
 
@@ -587,6 +596,48 @@ CalMemSize:
     movl    %eax,           (MemSize)
 cal_end:
     ret  
+
+
+SetupPageMechanism:
+    # For more easily, liner address match physical address
+
+    # initial Page Directory
+    mov     $PageDirSelector, %ax
+    mov     %ax,            %es
+    mov     $1024,          %ecx
+    xor     %edi,           %edi
+    xor     %eax,           %eax
+    movl    $(PageTblBase | PG_P | PG_USU | PG_RWW), %eax
+init_dir:
+    stosl
+    add     $4096,          %eax
+    loop    init_dir
+
+
+    # initial Page Table
+    mov     $PageTblSelector, %ax
+    mov     %ax,            %es
+    mov     $(1024 * 1024), %ecx
+    xor     %edi,           %edi
+    xor     %eax,           %eax
+    movl    $(PG_P | PG_USU | PG_RWW), %eax
+init_tbl:
+    stosl
+    add     $4096,          %eax
+    loop    init_tbl
+
+
+    # load into CR3 and enable highest bit(PG) in CR0
+    mov     $PageDirBase,    %eax
+    mov     %eax,           %cr3
+    mov     %cr0,           %eax
+    or      $0x80000000,    %eax
+    mov     %eax,           %cr0
+    jmp     short_jmp
+short_jmp:
+    nop
+
+    ret
 
 
 .set        Code32SegLen,   . - LABEL_CODE32_SEG

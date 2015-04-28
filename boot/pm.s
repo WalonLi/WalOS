@@ -16,7 +16,7 @@
 
 # 32 bit
 .set    DA_32,      0x4000
-
+.set    DA_LIMIT_4K, 0x8000
 
 # DPL(Discriptor Privilege Level)
 .set    DA_DPL0,    0x0
@@ -62,6 +62,9 @@
 .set    SA_TIG,     0
 .set    SA_TIL,     4
 
+
+.set    PageDirBase,    0x200000
+.set    PageTblBase,    0x201000
 
 # Page Attributes
 .set    PG_P,    1
