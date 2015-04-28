@@ -40,7 +40,7 @@ LABEL_TSS_DESC:     Descriptor  0,              (TssLen - 1),       DA_386TSS
 
 # don't initial in code 16
 LABEL_PAGE_DIR_DESC: Descriptor PageDirBase,    4095,               DA_DRW
-LABEL_PAGE_TBL_DESC: Descriptor PageTblBase,    1023,               (DA_DRW + DA_LIMIT_4K)
+LABEL_PAGE_TBL_DESC: Descriptor PageTblBase,    (4096*8-1),         DA_DRW      #DA_LIMIT_4K
 
 LABEL_CG_DEST_DESC: Descriptor  0,              (CGDestSegLen-1),   (DA_C + DA_32)
 
@@ -600,6 +600,22 @@ cal_end:
 
 SetupPageMechanism:
     # For more easily, liner address match physical address
+    # Each list have 4 byte
+    # PD have 1024 PDE
+    # PDE have 1 PT
+    # PT have 1024 PTE
+    # PTE have 1 PA(Physical Address)
+
+    # calculate how many PDE and PTE to initial
+    xor     %edx,           %edx
+    mov     (MemSize),      %eax        
+    mov     $0x400000,      %ebx        # each table can restore 4MB
+    div     %ebx                        # eax = page table count = PDE count, %edx = remainder
+    test    %edx,           %edx
+    jz      no_remainder
+    inc     %eax
+no_remainder:
+    push    %eax                        # restore
 
     # initial Page Directory
     mov     $PageDirSelector, %ax
@@ -611,13 +627,17 @@ SetupPageMechanism:
 init_dir:
     stosl
     add     $4096,          %eax
-    loop    init_dir
+    loop    init_dir 
+
 
 
     # initial Page Table
     mov     $PageTblSelector, %ax
     mov     %ax,            %es
-    mov     $(1024 * 1024), %ecx
+    pop     %eax                        # get page table count
+    mov     $1024,          %ebx        # each 
+    mul     %ebx
+    mov     %eax,           %ecx
     xor     %edi,           %edi
     xor     %eax,           %eax
     movl    $(PG_P | PG_USU | PG_RWW), %eax
@@ -628,7 +648,7 @@ init_tbl:
 
 
     # load into CR3 and enable highest bit(PG) in CR0
-    mov     $PageDirBase,    %eax
+    mov     $PageDirBase,   %eax
     mov     %eax,           %cr3
     mov     %cr0,           %eax
     or      $0x80000000,    %eax
