@@ -95,9 +95,9 @@ LABEL_START:
 
 
     movw    $SecNoOfRootDir, (gSectorNo)   
-LABEL_SEARCH_LOADER_IN_ROOT_DIR:
+search_loader_in_root_dir:
     cmpw    $0,         (gRootDirSizeForLoop)   # check root dir loop
-    jz      LABEL_NO_LOADER
+    jz      no_loader
     decw    (gRootDirSizeForLoop)               # loop--
 
     # fill es:bx for int13 read
@@ -116,51 +116,51 @@ LABEL_SEARCH_LOADER_IN_ROOT_DIR:
 
 
     mov     $0x10,      %dx                     # each sector have 0x10 x 0x20 byts
-LABEL_SEARCH_FOR_LOADER_BIN:
+search_for_loader_bin:
     cmp     $0,         %dx
-    jz      LABEL_NEXT_SECTOR_IN_ROOT_DIR
+    jz      next_sector_in_root_dir
     dec     %dx
 
     # compare file name
     mov     $11,        %cx
-LABEL_CMP_FILE_NAME:
+compare_file_name:
     cmp     $0,         %cx
-    jz      LABEL_FILE_NAME_FOUND               # if cx == 0, file name is matche
+    jz      file_name_found               # if cx == 0, file name is matche
     dec     %cx
     lodsb                                       # %ds:(%si) -> %al
     cmp     %es:(%di),  %al
     
-    jz      LABEL_NEXT_CHAR      
-    jmp     LABEL_FILE_NAME_NOT_MATCH
+    jz      next_character      
+    jmp     file_name_not_match
 
 
     # file name not matched, check next 0x20 bytes
-LABEL_FILE_NAME_NOT_MATCH:                      
+file_name_not_match:                      
     and     $0xffe0,    %di
     add     $0x20,      %di
     mov     $LoaderName, %si      
-    jmp     LABEL_SEARCH_FOR_LOADER_BIN
+    jmp     search_for_loader_bin
 
     # compare next character
-LABEL_NEXT_CHAR:
+next_character:
     inc     %di
-    jmp     LABEL_CMP_FILE_NAME
+    jmp     compare_file_name
 
 
-LABEL_NEXT_SECTOR_IN_ROOT_DIR:
+next_sector_in_root_dir:
     addw    $1,         (gSectorNo)
-    jmp     LABEL_SEARCH_LOADER_IN_ROOT_DIR
+    jmp     search_loader_in_root_dir
 
 
     # Not found LOADER.BIN in root dir
-LABEL_NO_LOADER:
+no_loader:
     mov     $2,         %dh
     call    ShowMsg                             # show load fail message
     jmp     .
 
 
     # file name found
-LABEL_FILE_NAME_FOUND:
+file_name_found:
     mov     $RootDirSectors, %ax
     and     $0xffe0,    %di                     # reset Entry, now, es:di is entry of head
     add     $0x1a,      %di                     # offset 0x1a record first sector number
@@ -173,7 +173,7 @@ LABEL_FILE_NAME_FOUND:
     mov     $OffsetOfLoader, %bx                # %bx <- OffsetOfLoader
     mov     %cx,        %ax                     # %ax <- Sector number
 
-LABEL_LOADING_FILE:
+loading_file:
     #call    PrintDot
 
     mov     $1,         %cl
@@ -181,15 +181,15 @@ LABEL_LOADING_FILE:
     pop     %ax                                 # Got index of this sector in FAT
     call    GetFATEntry
     cmp     $0x0fff,    %ax                     # 0xfff means is the end sector
-    jz      LABEL_FILE_LOADED
+    jz      file_loaded
     push    %ax                                 # Save index of this sector in FAT
     mov     $RootDirSectors, %dx
     add     %dx,        %ax
     add     $DeltaSecNo, %ax
     add     (BPB_BytsPerSec), %bx
-    jmp     LABEL_LOADING_FILE
+    jmp     loading_file
 
-LABEL_FILE_LOADED:
+file_loaded:
     mov     $1,         %dh
     call    ShowMsg                             # Show Load success
     
@@ -253,16 +253,16 @@ ShowMsg:
     mov     $0x1301,    %ax
 
     cmp	    $2,         %dh
-    jz      MsgRedColor
-    jmp     MsgWhiteColor
+    jz      msg_color_red
+    jmp     msg_color_white
 
-MsgRedColor:
+msg_color_red:
     mov     $0xc,       %bx
-    jmp     MsgFlag
-MsgWhiteColor:
+    jmp     msg_color_end
+msg_color_white:
     mov     $0x7,       %bx
+msg_color_end:
 
-MsgFlag:
     mov     (PrintCount), %dh
     mov     $0,         %dl
     int     $0x10
@@ -306,11 +306,11 @@ ReadSector:
     # %cl = start sector number
     # %dh = magnetic header
     mov     (BS_DrvNum), %dl
-Reading:
+reading:
     mov     $2,     %ah
     mov     -2(%ebp), %al       # Read %al sectors 
     int     $0x13
-    jc      Reading             # check CF, if == 1, read again
+    jc      reading             # check CF, if == 1, read again
     add     $2,%esp
     pop     %ebp
     ret
@@ -332,7 +332,7 @@ GetFATEntry:
     mov     $2,         %bx
     div     %bx                             # %dx:%ax/2 
     movb    %dl,        (gOdd)              # store remainder %dx in label bOdd. 
-LABEL_EVEN:
+    
     xor     %dx,        %dx                 # Now %ax is the offset of FATEntry in FAT 
     mov     (BPB_BytsPerSec), %bx
     div     %bx                             # %dx:%ax/BPB_BytsPerSec 
@@ -345,11 +345,11 @@ LABEL_EVEN:
     add     %dx,        %bx
     mov     %es:(%bx),  %ax                 # read FAT entry by word(2 bytes) 
     cmpb    $0,         (gOdd)              # remainder %dx(see above) == 0 ?
-    jz      LABEL_EVEN_2                    # NOTE: %ah: high address byte, %al: low byte 
+    jz      even_2                          # NOTE: %ah: high address byte, %al: low byte 
     shr     $4,         %ax
-LABEL_EVEN_2:
+even_2:
     and     $0x0fff,    %ax
-LABEL_GET_FAT_ENTRY_OK:
+    
     pop     %bx
     pop     %es
     ret

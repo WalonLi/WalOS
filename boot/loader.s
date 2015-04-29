@@ -225,7 +225,7 @@ LABEL_BEGIN:
     # Get physical memory size and ARD struct
     mov     $0,         %ebx
     mov     $_MemChkBuf, %edi
-GetMemInfoLoop:
+get_mem_info_loop:
     mov     $0xe820,    %eax
     mov     $20,        %ecx
     mov     $0x534d4150, %edx           # 'SMAP'
@@ -234,12 +234,12 @@ GetMemInfoLoop:
     add     $20,        %di
     incl    _MCRNumber
     cmp     $0,         %ebx
-    jne     GetMemInfoLoop
+    jne     get_mem_info_loop
     jmp     MemChkOk
 
-MemChkFail:
+mem_chk_fail:
     movl    $0,         _MCRNumber
-MemChkOk:
+mem_chk_ok:
 
     
     # initial 32 code segment descriptor
