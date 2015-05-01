@@ -39,8 +39,12 @@ LABEL_R3_STACK_DESC: Descriptor 0,              (Ring3StackLen - 1), (DA_DRWA + 
 LABEL_TSS_DESC:     Descriptor  0,              (TssLen - 1),       DA_386TSS
 
 # don't initial in code 16
-LABEL_PAGE_DIR_DESC: Descriptor PageDirBase,    4095,               DA_DRW
-LABEL_PAGE_TBL_DESC: Descriptor PageTblBase,    (4096*8-1),         DA_DRW      #DA_LIMIT_4K
+#LABEL_PAGE_DIR_DESC: Descriptor PageDirBase,    4095,               DA_DRW
+#LABEL_PAGE_TBL_DESC: Descriptor PageTblBase,    (4096*8-1),         DA_DRW      #DA_LIMIT_4K
+LABEL_FLAT_C_DESC:  Descriptor  0,              0xfffff,            (DA_CR + DA_32 + DA_LIMIT_4K)
+LABEL_FLAT_RW_DESC: Descriptor  0,              0xfffff,            (DA_DRW + DA_LIMIT_4K)
+
+
 
 LABEL_CG_DEST_DESC: Descriptor  0,              (CGDestSegLen-1),   (DA_C + DA_32)
 
@@ -76,8 +80,11 @@ LABEL_LDT_A_DESC:   Descriptor  0,              (LdtASegLen - 1),  (DA_C + DA_32
 .set        Ring3StackSelector, (LABEL_R3_STACK_DESC - LABEL_GDT + SA_RPL3)
 
 .set        TssSelector,    (LABEL_TSS_DESC - LABEL_GDT)
-.set        PageDirSelector, (LABEL_PAGE_DIR_DESC - LABEL_GDT)
-.set        PageTblSelector, (LABEL_PAGE_TBL_DESC - LABEL_GDT)
+#.set        PageDirSelector, (LABEL_PAGE_DIR_DESC - LABEL_GDT)
+#.set        PageTblSelector, (LABEL_PAGE_TBL_DESC - LABEL_GDT)
+.set        FlatCSelector,  (LABEL_FLAT_C_DESC - LABEL_GDT)
+.set        FlatRWSelector, (LABEL_FLAT_RW_DESC - LABEL_GDT)
+
 
 #   LDT Selector
 .set        LdtASelector,   (LABEL_LDT_A_DESC - LABEL_LDT + SA_TIL)
@@ -114,7 +121,7 @@ LDTMsg:     .asciz      "Jump to LDT segment success."
 MemInfoMsg: .asciz      "BaseAddrL   BaseAddrH   LengthLow   LengthHigh  Type"
 MemDataMsg: .asciz      "00000000    00000000    00000000    00000000    00000000"
 MemSizeMsg: .asciz      "RAM size:   00000000"   
-
+PageTblCnt: .4byte      0
 ErrorMsg:   .asciz      "ERROR Message."
 MemByteCnt: .byte       0
 ColCount:   .byte       2
@@ -131,6 +138,7 @@ ColCount:   .byte       2
     .set            Type,            (_Type - LABEL_DATA_SEG)
 .set        MemChkBuf,      (_MemChkBuf - LABEL_DATA_SEG)
 
+
 .set        PMMsgOffset,    (PMMsg - LABEL_DATA_SEG)
 .set        LDTMsgOffset,   (LDTMsg - LABEL_DATA_SEG)
 .set        MemInfoMsgOffset, (MemInfoMsg - LABEL_DATA_SEG)
@@ -138,6 +146,8 @@ ColCount:   .byte       2
 .set        MemSizeMsgOffset,   (MemSizeMsg - LABEL_DATA_SEG)
 .set        ErrorMsgOffset, (ErrorMsg - LABEL_DATA_SEG)
 .set        ColCountOffset, (ColCount - LABEL_DATA_SEG)
+
+.set        PageTblCntOffset, (PageTblCnt - LABEL_DATA_SEG)
 
 .set        DataSegLen,     (. - LABEL_DATA_SEG)
 
@@ -337,15 +347,15 @@ LABEL_CODE32_SEG:
 
 
     # load TSS
-    mov     $TssSelector, %ax
-    ltr     %ax
+#    mov     $TssSelector, %ax
+#    ltr     %ax
 
     #Ring 3 test
-    push    $Ring3StackSelector
-    push    $(Ring3StackLen-1)
-    push    $Ring3CodeSelector
-    push    $0
-    lret
+#    push    $Ring3StackSelector
+#    push    $(Ring3StackLen-1)
+#    push    $Ring3CodeSelector
+#    push    $0
+#    lret
 
     #lcall   $CGDestSelector, $0
     #lcall   $CallGateSelector, $0
@@ -615,15 +625,16 @@ SetupPageMechanism:
     jz      no_remainder
     inc     %eax
 no_remainder:
-    push    %eax                        # restore
+    movl     %eax,          (PageTblCntOffset)   # restore
+    
+
 
     # initial Page Directory
-    mov     $PageDirSelector, %ax
+    mov     $FlatRWSelector, %ax
     mov     %ax,            %es
-    mov     $1024,          %ecx
-    xor     %edi,           %edi
+    mov     $PageDirBase0,  %edi
     xor     %eax,           %eax
-    movl    $(PageTblBase | PG_P | PG_USU | PG_RWW), %eax
+    movl    $(PageTblBase0 | PG_P | PG_USU | PG_RWW), %eax
 init_dir:
     stosl
     add     $4096,          %eax
@@ -632,13 +643,11 @@ init_dir:
 
 
     # initial Page Table
-    mov     $PageTblSelector, %ax
-    mov     %ax,            %es
-    pop     %eax                        # get page table count
+    movl    (PageTblCntOffset), %eax
     mov     $1024,          %ebx        # each 
     mul     %ebx
     mov     %eax,           %ecx
-    xor     %edi,           %edi
+    movl    $PageDirBase0,  %edi
     xor     %eax,           %eax
     movl    $(PG_P | PG_USU | PG_RWW), %eax
 init_tbl:
@@ -648,8 +657,10 @@ init_tbl:
 
 
     # load into CR3 and enable highest bit(PG) in CR0
-    mov     $PageDirBase,   %eax
+    mov     $PageDirBase0,  %eax
     mov     %eax,           %cr3
+
+
     mov     %cr0,           %eax
     or      $0x80000000,    %eax
     mov     %eax,           %cr0
