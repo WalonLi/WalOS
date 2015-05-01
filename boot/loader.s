@@ -25,8 +25,8 @@
 #                         #
 ###########################
 #   GDT                         BASE            LIMIT               ATTR
-LABEL_GDT:      Descriptor      0,              0,              0           
-LABEL_CODE32_DESC:  Descriptor  0,              (Code32SegLen - 1), (DA_C + DA_32)
+LABEL_GDT:      Descriptor      0,              0,                  0           
+LABEL_CODE32_DESC:  Descriptor  0,              (Code32SegLen - 1), (DA_CR + DA_32)
 LABEL_DATA_DESC:    Descriptor  0,              (DataSegLen - 1),   DA_DRW
 LABEL_R0_STACK_DESC: Descriptor 0,              (Ring0StackLen - 1),  (DA_DRW + DA_32)
 LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             (DA_DRW+DA_DPL3)
@@ -343,7 +343,9 @@ LABEL_CODE32_SEG:
 
     # Sizing memory and load page table
     call    ShowMemInfo
-    call    SetupPageMechanism
+    #call    SetupPageMechanism
+
+    call    PagingDemo
 
 
     # load TSS
@@ -618,16 +620,15 @@ SetupPageMechanism:
 
     # calculate how many PDE and PTE to initial
     xor     %edx,           %edx
-    mov     (MemSize),      %eax        
+    mov     (MemSize),      %eax      
     mov     $0x400000,      %ebx        # each table can restore 4MB
     div     %ebx                        # eax = page table count = PDE count, %edx = remainder
+    mov     %eax,           %ecx
     test    %edx,           %edx
     jz      no_remainder
-    inc     %eax
+    inc     %ecx
 no_remainder:
-    movl     %eax,          (PageTblCntOffset)   # restore
-    
-
+    movl     %ecx,          (PageTblCntOffset)   # restore
 
     # initial Page Directory
     mov     $FlatRWSelector, %ax
@@ -643,11 +644,11 @@ init_dir:
 
 
     # initial Page Table
-    movl    (PageTblCntOffset), %eax
+    mov     (PageTblCntOffset), %eax
     mov     $1024,          %ebx        # each 
     mul     %ebx
     mov     %eax,           %ecx
-    movl    $PageDirBase0,  %edi
+    movl    $PageTblBase0,  %edi
     xor     %eax,           %eax
     movl    $(PG_P | PG_USU | PG_RWW), %eax
 init_tbl:
@@ -656,19 +657,189 @@ init_tbl:
     loop    init_tbl
 
 
+
     # load into CR3 and enable highest bit(PG) in CR0
     mov     $PageDirBase0,  %eax
     mov     %eax,           %cr3
 
-
     mov     %cr0,           %eax
     or      $0x80000000,    %eax
     mov     %eax,           %cr0
-    jmp     short_jmp
-short_jmp:
-    nop
 
     ret
+
+
+
+# void *MemCpy(void* es:dest, ds:src, int size)
+MemCpy:
+    push    %ebp
+    mov     %esp,           %ebp
+
+    push    %esi
+    push    %edi
+    push    %ecx
+
+    movl    8(%ebp),        %edi # dest
+    movl    12(%ebp),       %esi # src
+    movl    16(%ebp),       %ecx # counter
+
+copy_ch:
+    cmp     $0,             %ecx
+    je      copy_end
+
+    movb    %ds:(%esi),     %al
+    inc     %esi
+    mov     %al,            %es:(%edi)
+    inc     %edi
+    dec     %ecx
+    jmp     copy_ch
+copy_end:
+    movl    8(%ebp),        %eax
+
+    pop     %ecx
+    pop     %edi
+    pop     %esi
+    mov     %ebp,           %esp
+    pop     %ebp
+    ret
+
+
+#
+PageSwitch:
+
+    mov     $FlatRWSelector, %ax
+    mov     %ax,            %es
+    mov     $PageDirBase1,  %edi
+    xor     %eax,           %eax
+    movl    $(PageTblBase1 | PG_P | PG_USU | PG_RWW), %eax
+    movl    (PageTblCntOffset), %ecx
+
+    
+switch_1:
+    stosl
+    add     $4096,          %eax
+    loop    switch_1
+    
+
+    movl    (PageTblCntOffset), %eax
+    shl     $10,            %eax    # eax * 1024
+    mov     %eax,           %ecx
+    mov     $PageTblBase1,  %edi
+    xor     %eax,           %eax
+
+    mov     $(PG_P | PG_USU | PG_RWW), %eax
+
+    
+switch_2:
+    
+    stosl
+    add     $4096,          %eax
+
+    loop    switch_2
+    
+    
+    # assume memory > 8mb
+    # backup oranges code
+    #mov     $LinearAddrDemo, %eax
+    #shr     $22,            %eax
+    #mov     $4096,          %ebx
+    #mul     %ebx
+    #mov     %eax,           %ecx
+    
+
+    mov     $LinearAddrDemo, %eax
+    shr     $12,            %eax
+    shl     $2,             %eax    # eax * 4
+    #and     $0x3ff,         %eax    # 1111111111b (10bit)
+    #mov     $4,             %ebx 
+    #mul     %ebx
+    #add     %ecx,           %eax
+    add     $PageTblBase1,  %eax
+    movl    $(ProcBar | PG_P | PG_USU | PG_RWW), %es:(%eax)
+
+
+    mov     $PageDirBase1,  %eax
+    mov     %eax,           %cr3
+
+    ret 
+
+
+
+PagingDemo:
+
+    # Move code seg to data seg
+    mov     %cs,            %ax
+    mov     %ax,            %ds
+    mov     $FlatRWSelector, %ax
+    mov     %ax,            %es
+    
+
+
+    push    $FooLen
+    push    $FooOffset
+    push    $ProcFoo
+    call    MemCpy
+    add     $12,            %esp
+
+    push    $BarLen
+    push    $BarOffset
+    push    $ProcBar
+    call    MemCpy
+    add     $12,            %esp
+
+    push    $PagingDemoProcLen
+    push    $PagingDemoProcOffset
+    push    $ProcPagingDemo
+    call    MemCpy
+    add     $12,            %esp
+
+    # restore ds and es
+    mov     $DataSelector,  %ax
+    mov     %ax,            %ds
+    mov     %ax,            %es
+
+    call    SetupPageMechanism
+
+    call    $FlatCSelector, $ProcPagingDemo
+
+    call    PageSwitch
+
+    call    $FlatCSelector, $ProcPagingDemo
+
+
+    jmp     .
+    ret 
+
+
+PagingDemoProc:
+.set        PagingDemoProcOffset, . - LABEL_CODE32_SEG
+    mov     $LinearAddrDemo, %eax
+    call    %eax
+    lret
+.set        PagingDemoProcLen,  . - PagingDemoProc
+
+
+Foo:
+.set        FooOffset,      . - LABEL_CODE32_SEG
+    mov     $VideoSelector, %ax
+    mov     %ax,        %gs
+    mov     $0xc,           %ah
+    mov     $'F',           %al
+    mov     %ax,            %gs:((80*17)*2)
+    ret  
+.set        FooLen,         . - Foo
+
+
+Bar:
+.set        BarOffset,      . - LABEL_CODE32_SEG
+    mov     $VideoSelector, %ax
+    mov     %ax,        %gs
+    mov     $0xc,           %ah
+    mov     $'B',           %al
+    mov     %ax,            %gs:((80*18)*2)
+    ret  
+.set        BarLen,         . - Bar
+
 
 
 .set        Code32SegLen,   . - LABEL_CODE32_SEG
