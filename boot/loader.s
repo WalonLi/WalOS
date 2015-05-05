@@ -230,12 +230,12 @@ get_mem_info_loop:
     mov     $20,        %ecx
     mov     $0x534d4150, %edx           # 'SMAP'
     int     $0x15
-    jc      MemChkFail
+    jc      mem_chk_fail
     add     $20,        %di
     incl    _MCRNumber
     cmp     $0,         %ebx
     jne     get_mem_info_loop
-    jmp     MemChkOk
+    jmp     mem_chk_ok
 
 mem_chk_fail:
     movl    $0,         _MCRNumber
