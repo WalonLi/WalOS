@@ -1,17 +1,18 @@
 #
 #   Provide by Walon Li
-#   2015/04/23
+#   2015/5/5
 #
 
 
 #   Current Flow
-#   1. Enter protected mode
-#   2. Jump to Code32 segment(R0)
-#   3. Show message.
-#   4. Far Call Ring3 Code(R3) and show '3'
-#   5. Far Call CG_Dest(R0) by call gate and show 'G'
-#   5. Far Call LDT_A segemnt by LDT and show 'L'
-#   6. Back to Ring3 Code(R3) and show 'O'
+#   1. Get memory data by int 0x15
+#   2. Enter protected mode
+#   3. Jump to Code32 segment(R0)
+#   4. Show protected message
+#   5. Calculate memory size and show information
+#   6. Set page table and enable page mechanic
+#   7. Switch page, execute same virtual mem address, Foo(F)->Bar(B)
+
 
 .include "pm.s"
 .code16
@@ -25,8 +26,8 @@
 #                         #
 ###########################
 #   GDT                         BASE            LIMIT               ATTR
-LABEL_GDT:      Descriptor      0,              0,              0           
-LABEL_CODE32_DESC:  Descriptor  0,              (Code32SegLen - 1), (DA_C + DA_32)
+LABEL_GDT:      Descriptor      0,              0,                  0           
+LABEL_CODE32_DESC:  Descriptor  0,              (Code32SegLen - 1), (DA_CR + DA_32)
 LABEL_DATA_DESC:    Descriptor  0,              (DataSegLen - 1),   DA_DRW
 LABEL_R0_STACK_DESC: Descriptor 0,              (Ring0StackLen - 1),  (DA_DRW + DA_32)
 LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             (DA_DRW+DA_DPL3)
@@ -38,7 +39,15 @@ LABEL_R3_STACK_DESC: Descriptor 0,              (Ring3StackLen - 1), (DA_DRWA + 
 
 LABEL_TSS_DESC:     Descriptor  0,              (TssLen - 1),       DA_386TSS
 
-LABEL_CG_DEST_DESC: Descriptor  0,              (CGDestSegLen-1), (DA_C + DA_32)
+# don't initial in code 16
+#LABEL_PAGE_DIR_DESC: Descriptor PageDirBase,    4095,               DA_DRW
+#LABEL_PAGE_TBL_DESC: Descriptor PageTblBase,    (4096*8-1),         DA_DRW      #DA_LIMIT_4K
+LABEL_FLAT_C_DESC:  Descriptor  0,              0xfffff,            (DA_CR + DA_32 + DA_LIMIT_4K)
+LABEL_FLAT_RW_DESC: Descriptor  0,              0xfffff,            (DA_DRW + DA_LIMIT_4K)
+
+
+
+LABEL_CG_DEST_DESC: Descriptor  0,              (CGDestSegLen-1),   (DA_C + DA_32)
 
 #   Gate                        Selector            Offset  DCount  Attr
 LABEL_CALL_GATE:    Gate        CGDestSelector,     0,      0,      (DA_386CGate+DA_DPL3)
@@ -72,6 +81,12 @@ LABEL_LDT_A_DESC:   Descriptor  0,              (LdtASegLen - 1),  (DA_C + DA_32
 .set        Ring3StackSelector, (LABEL_R3_STACK_DESC - LABEL_GDT + SA_RPL3)
 
 .set        TssSelector,    (LABEL_TSS_DESC - LABEL_GDT)
+#.set        PageDirSelector, (LABEL_PAGE_DIR_DESC - LABEL_GDT)
+#.set        PageTblSelector, (LABEL_PAGE_TBL_DESC - LABEL_GDT)
+.set        FlatCSelector,  (LABEL_FLAT_C_DESC - LABEL_GDT)
+.set        FlatRWSelector, (LABEL_FLAT_RW_DESC - LABEL_GDT)
+
+
 #   LDT Selector
 .set        LdtASelector,   (LABEL_LDT_A_DESC - LABEL_LDT + SA_TIL)
 
@@ -107,7 +122,7 @@ LDTMsg:     .asciz      "Jump to LDT segment success."
 MemInfoMsg: .asciz      "BaseAddrL   BaseAddrH   LengthLow   LengthHigh  Type"
 MemDataMsg: .asciz      "00000000    00000000    00000000    00000000    00000000"
 MemSizeMsg: .asciz      "RAM size:   00000000"   
-
+PageTblCnt: .4byte      0
 ErrorMsg:   .asciz      "ERROR Message."
 MemByteCnt: .byte       0
 ColCount:   .byte       2
@@ -124,6 +139,7 @@ ColCount:   .byte       2
     .set            Type,            (_Type - LABEL_DATA_SEG)
 .set        MemChkBuf,      (_MemChkBuf - LABEL_DATA_SEG)
 
+
 .set        PMMsgOffset,    (PMMsg - LABEL_DATA_SEG)
 .set        LDTMsgOffset,   (LDTMsg - LABEL_DATA_SEG)
 .set        MemInfoMsgOffset, (MemInfoMsg - LABEL_DATA_SEG)
@@ -131,6 +147,8 @@ ColCount:   .byte       2
 .set        MemSizeMsgOffset,   (MemSizeMsg - LABEL_DATA_SEG)
 .set        ErrorMsgOffset, (ErrorMsg - LABEL_DATA_SEG)
 .set        ColCountOffset, (ColCount - LABEL_DATA_SEG)
+
+.set        PageTblCntOffset, (PageTblCnt - LABEL_DATA_SEG)
 
 .set        DataSegLen,     (. - LABEL_DATA_SEG)
 
@@ -266,6 +284,7 @@ mem_chk_ok:
 
     # initial TSS
     InitDescriptor LABEL_TSS, LABEL_TSS_DESC
+
     
 
     # for loading gdtr
@@ -323,19 +342,23 @@ LABEL_CODE32_SEG:
     movb    $0,         %al
     call    ShowCStyleMsg
 
+    # Sizing memory and load page table
     call    ShowMemInfo
+    #call    SetupPageMechanism
+
+    call    PagingDemo
 
 
     # load TSS
-    mov     $TssSelector, %ax
-    ltr     %ax
+#    mov     $TssSelector, %ax
+#    ltr     %ax
 
     #Ring 3 test
-    push    $Ring3StackSelector
-    push    $(Ring3StackLen-1)
-    push    $Ring3CodeSelector
-    push    $0
-    lret
+#    push    $Ring3StackSelector
+#    push    $(Ring3StackLen-1)
+#    push    $Ring3CodeSelector
+#    push    $0
+#    lret
 
     #lcall   $CGDestSelector, $0
     #lcall   $CallGateSelector, $0
@@ -507,6 +530,7 @@ shf_end:
     pop     %ecx
     pop     %edi
     pop     %esi
+
     ret
 
 
@@ -598,6 +622,238 @@ CalculateMemSize:
     movl    %eax,           (MemSize)
 cal_mem_end:
     ret  
+
+
+SetupPageMechanism:
+    # For more easily, liner address match physical address
+    # Each list have 4 byte
+    # PD have 1024 PDE
+    # PDE have 1 PT
+    # PT have 1024 PTE
+    # PTE have 1 PA(Physical Address)
+
+    # calculate how many PDE and PTE to initial
+    xor     %edx,           %edx
+    mov     (MemSize),      %eax      
+    mov     $0x400000,      %ebx        # each table can restore 4MB
+    div     %ebx                        # eax = page table count = PDE count, %edx = remainder
+    mov     %eax,           %ecx
+    test    %edx,           %edx
+    jz      no_remainder
+    inc     %ecx
+no_remainder:
+    movl     %ecx,          (PageTblCntOffset)   # restore
+
+    # initial Page Directory
+    mov     $FlatRWSelector, %ax
+    mov     %ax,            %es
+    mov     $PageDirBase0,  %edi
+    xor     %eax,           %eax
+    movl    $(PageTblBase0 | PG_P | PG_USU | PG_RWW), %eax
+init_dir:
+    stosl
+    add     $4096,          %eax
+    loop    init_dir 
+
+
+
+    # initial Page Table
+    mov     (PageTblCntOffset), %eax
+    mov     $1024,          %ebx        # each 
+    mul     %ebx
+    mov     %eax,           %ecx
+    movl    $PageTblBase0,  %edi
+    xor     %eax,           %eax
+    movl    $(PG_P | PG_USU | PG_RWW), %eax
+init_tbl:
+    stosl
+    add     $4096,          %eax
+    loop    init_tbl
+
+
+
+    # load into CR3 and enable highest bit(PG) in CR0
+    mov     $PageDirBase0,  %eax
+    mov     %eax,           %cr3
+
+    mov     %cr0,           %eax
+    or      $0x80000000,    %eax
+    mov     %eax,           %cr0
+
+    ret
+
+
+
+# void *MemCpy(void* es:dest, ds:src, int size)
+MemCpy:
+    push    %ebp
+    mov     %esp,           %ebp
+
+    push    %esi
+    push    %edi
+    push    %ecx
+
+    movl    8(%ebp),        %edi # dest
+    movl    12(%ebp),       %esi # src
+    movl    16(%ebp),       %ecx # counter
+
+copy_ch:
+    cmp     $0,             %ecx
+    je      copy_end
+
+    movb    %ds:(%esi),     %al
+    inc     %esi
+    mov     %al,            %es:(%edi)
+    inc     %edi
+    dec     %ecx
+    jmp     copy_ch
+copy_end:
+    movl    8(%ebp),        %eax
+
+    pop     %ecx
+    pop     %edi
+    pop     %esi
+    mov     %ebp,           %esp
+    pop     %ebp
+    ret
+
+
+#
+PageSwitch:
+
+    mov     $FlatRWSelector, %ax
+    mov     %ax,            %es
+    mov     $PageDirBase1,  %edi
+    xor     %eax,           %eax
+    movl    $(PageTblBase1 | PG_P | PG_USU | PG_RWW), %eax
+    movl    (PageTblCntOffset), %ecx
+
+    
+switch_1:
+    stosl
+    add     $4096,          %eax
+    loop    switch_1
+    
+
+    movl    (PageTblCntOffset), %eax
+    shl     $10,            %eax    # eax * 1024
+    mov     %eax,           %ecx
+    mov     $PageTblBase1,  %edi
+    xor     %eax,           %eax
+
+    mov     $(PG_P | PG_USU | PG_RWW), %eax
+
+    
+switch_2:
+    
+    stosl
+    add     $4096,          %eax
+
+    loop    switch_2
+    
+    
+    # assume memory > 8mb
+    # backup oranges code
+    #mov     $LinearAddrDemo, %eax
+    #shr     $22,            %eax
+    #mov     $4096,          %ebx
+    #mul     %ebx
+    #mov     %eax,           %ecx
+    
+
+    mov     $LinearAddrDemo, %eax
+    shr     $12,            %eax
+    shl     $2,             %eax    # eax * 4
+    #and     $0x3ff,         %eax    # 1111111111b (10bit)
+    #mov     $4,             %ebx 
+    #mul     %ebx
+    #add     %ecx,           %eax
+    add     $PageTblBase1,  %eax
+    movl    $(ProcBar | PG_P | PG_USU | PG_RWW), %es:(%eax)
+
+
+    mov     $PageDirBase1,  %eax
+    mov     %eax,           %cr3
+
+    ret 
+
+
+
+PagingDemo:
+
+    # Move code seg to data seg
+    mov     %cs,            %ax
+    mov     %ax,            %ds
+    mov     $FlatRWSelector, %ax
+    mov     %ax,            %es
+    
+
+
+    push    $FooLen
+    push    $FooOffset
+    push    $ProcFoo
+    call    MemCpy
+    add     $12,            %esp
+
+    push    $BarLen
+    push    $BarOffset
+    push    $ProcBar
+    call    MemCpy
+    add     $12,            %esp
+
+    push    $PagingDemoProcLen
+    push    $PagingDemoProcOffset
+    push    $ProcPagingDemo
+    call    MemCpy
+    add     $12,            %esp
+
+    # restore ds and es
+    mov     $DataSelector,  %ax
+    mov     %ax,            %ds
+    mov     %ax,            %es
+
+    call    SetupPageMechanism
+
+    call    $FlatCSelector, $ProcPagingDemo
+
+    call    PageSwitch
+
+    call    $FlatCSelector, $ProcPagingDemo
+
+
+    jmp     .
+    ret 
+
+
+PagingDemoProc:
+.set        PagingDemoProcOffset, . - LABEL_CODE32_SEG
+    mov     $LinearAddrDemo, %eax
+    call    %eax
+    lret
+.set        PagingDemoProcLen,  . - PagingDemoProc
+
+
+Foo:
+.set        FooOffset,      . - LABEL_CODE32_SEG
+    mov     $VideoSelector, %ax
+    mov     %ax,        %gs
+    mov     $0xc,           %ah
+    mov     $'F',           %al
+    mov     %ax,            %gs:((80*17)*2)
+    ret  
+.set        FooLen,         . - Foo
+
+
+Bar:
+.set        BarOffset,      . - LABEL_CODE32_SEG
+    mov     $VideoSelector, %ax
+    mov     %ax,        %gs
+    mov     $0xc,           %ah
+    mov     $'B',           %al
+    mov     %ax,            %gs:((80*18)*2)
+    ret  
+.set        BarLen,         . - Bar
+
 
 
 .set        Code32SegLen,   . - LABEL_CODE32_SEG
