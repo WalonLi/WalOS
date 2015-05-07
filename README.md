@@ -10,6 +10,8 @@ It's a small x86 OS.
 
 [Orange'S 一個作業系統的實現(于淵)](http://forrestyu.net/)
 
+[Intel® 64 and IA-32 Architectures Software Developer’s Manual](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html)
+
 ----
 
 ```
