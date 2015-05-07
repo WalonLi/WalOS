@@ -122,6 +122,7 @@ LDTMsg:     .asciz      "Jump to LDT segment success."
 MemInfoMsg: .asciz      "BaseAddrL   BaseAddrH   LengthLow   LengthHigh  Type"
 MemDataMsg: .asciz      "00000000    00000000    00000000    00000000    00000000"
 MemSizeMsg: .asciz      "RAM size:   00000000"   
+InterruptMsg: .asciz    "Open 8295A interrupt."
 PageTblCnt: .4byte      0
 ErrorMsg:   .asciz      "ERROR Message."
 MemByteCnt: .byte       0
@@ -145,6 +146,7 @@ ColCount:   .byte       2
 .set        MemInfoMsgOffset, (MemInfoMsg - LABEL_DATA_SEG)
 .set        MemDataMsgOffset,   (MemDataMsg - LABEL_DATA_SEG)
 .set        MemSizeMsgOffset,   (MemSizeMsg - LABEL_DATA_SEG)
+.set        InterruptMsgOffset,   (InterruptMsg - LABEL_DATA_SEG)
 .set        ErrorMsgOffset, (ErrorMsg - LABEL_DATA_SEG)
 .set        ColCountOffset, (ColCount - LABEL_DATA_SEG)
 
@@ -342,11 +344,16 @@ LABEL_CODE32_SEG:
     movb    $0,         %al
     call    ShowCStyleMsg
 
+    call    Init8259A
+
     # Sizing memory and load page table
     call    ShowMemInfo
     #call    SetupPageMechanism
 
     call    PagingDemo
+
+    # init 8259A hardware interrupt.
+
 
 
     # load TSS
@@ -407,6 +414,9 @@ ShowCStyleMsg:
     cmpb    $4,         %al
     je      msg_4
 
+    cmpb    $5,         %al
+    je      msg_5
+
     jmp     msg_error
 
 msg_0:    
@@ -427,6 +437,10 @@ msg_3:
 
 msg_4:
     movl    $MemSizeMsgOffset, %esi
+    jmp     msg_end
+
+msg_5:
+    movl    $InterruptMsgOffset, %esi
     jmp     msg_end
 
 msg_error:
@@ -821,7 +835,7 @@ PagingDemo:
     call    $FlatCSelector, $ProcPagingDemo
 
 
-    jmp     .
+    #jmp     .
     ret 
 
 
@@ -855,6 +869,69 @@ Bar:
 .set        BarLen,         . - Bar
 
 
+
+Init8259A:
+
+    movb    $5,         %al
+    call    ShowCStyleMsg
+
+    # ICW1
+    mov     $0x11,          %al
+    out     %al,            $0x20           #init master 8259
+    call    IODelay
+
+    out     %al,            $0xA0           #init slave 8259
+    call    IODelay
+
+    # ICW2
+    mov     $0x20,          %al
+    out     %al,            $0x21           # IRQ0 map to 0x20
+    call    IODelay
+
+    mov     $0x28,          %al
+    out     %al,            $0xA1           # IRQ8 map to 0xA0
+    call    IODelay
+
+    # ICW3
+    mov     $0x4,           %al
+    out     %al,            $0x21           # IR2 have slave 8259
+    call    IODelay
+
+    mov     $0x2,           %al
+    out     %al,            $0xA1           # map to master
+    call    IODelay
+
+    # ICW4
+    mov     $0x1,           %al
+    out     %al,            $0x21
+    call    IODelay
+
+    out     %al,            $0xA1
+    call    IODelay
+
+    # OCW1
+    mov     $0xfe,          %al             # only open timer interrupt, 0=open, 1=close
+    #mov     $0xff,          %al            # disable master 8259 interrupt
+    out     %al,            $0x21
+    call    IODelay
+
+    mov     $0xff,          %al            # disable master 8259 interrupt
+    out     %al,            $0xA1
+    call    IODelay
+
+    # OCW2                                 # send EOI(End of interrupt) to 8259, continue recived interrupt signal
+    #mov     $0x20,          %al           # 00000100b
+    #out     %al,            $0x20/$0xA0
+     
+    ret 
+
+
+IODelay:
+    nop
+    nop
+    nop
+    nop
+    ret
 
 .set        Code32SegLen,   . - LABEL_CODE32_SEG
 
