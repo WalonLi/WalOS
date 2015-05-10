@@ -63,6 +63,17 @@ LABEL_LDT_A_DESC:   Descriptor  0,              (LdtASegLen - 1),  (DA_C + DA_32
 
 .set        LdtLen,     . - LABEL_LDT
 
+#   IDT
+LABEL_IDT:
+.rept       255
+                #               dest selector   offset              Dcount  Attr
+                    Gate        Code32Selector, IdtHandlerOffset,   0,      (DA_386IGate)
+.endr
+
+.set        IdtLen,     . - LABEL_IDT
+IdtPtr:     .2byte      IdtLen - 1
+            .4byte      0    
+
 
 
 ###########################
@@ -287,7 +298,13 @@ mem_chk_ok:
     # initial TSS
     InitDescriptor LABEL_TSS, LABEL_TSS_DESC
 
-    
+    # initial IDT
+    xor     %eax,       %eax
+    mov     %ds,        %ax
+    shl     $4,         %eax
+    add     $LABEL_IDT, %eax
+    movl    %eax,       (IdtPtr+2)
+
 
     # for loading gdtr
     xor     %eax,       %eax
@@ -301,6 +318,9 @@ mem_chk_ok:
 
     # close all interrupt
     cli
+
+    # load IDTR
+    lidt    IdtPtr
 
     # open A20 address line
     inb     $0x92,      %al
@@ -868,6 +888,13 @@ Bar:
     ret  
 .set        BarLen,         . - Bar
 
+IdtHandler:
+.set        IdtHandlerOffset, . - LABEL_CODE32_SEG
+    mov     $0xc,           %ah
+    mov     $'!',           %al
+    mov     %ax,            %gs:((80*17)*3)
+    jmp     .
+    iret
 
 
 Init8259A:
