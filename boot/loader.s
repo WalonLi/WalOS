@@ -65,10 +65,18 @@ LABEL_LDT_A_DESC:   Descriptor  0,              (LdtASegLen - 1),  (DA_C + DA_32
 
 #   IDT
 LABEL_IDT:
-.rept       255
                 #               dest selector   offset              Dcount  Attr
+.rept       32
                     Gate        Code32Selector, IdtHandlerOffset,   0,      (DA_386IGate)
 .endr
+
+INT_20:             Gate        Code32Selector, ClockHandlerOffset, 0,      (DA_386IGate)
+
+.rept       95
+                    Gate        Code32Selector, IdtHandlerOffset,   0,      (DA_386IGate)
+.endr
+
+INT_80:             Gate        Code32Selector, Int80HandlerOffset, 0,      (DA_386IGate)
 
 .set        IdtLen,     . - LABEL_IDT
 IdtPtr:     .2byte      IdtLen - 1
@@ -365,6 +373,11 @@ LABEL_CODE32_SEG:
     call    ShowCStyleMsg
 
     call    Init8259A
+
+    # open a interrupt flag to test hardware clock interrupt. 
+    int     $0x80
+    sti
+    #jmp     . 
 
     # Sizing memory and load page table
     call    ShowMemInfo
@@ -891,10 +904,24 @@ Bar:
 IdtHandler:
 .set        IdtHandlerOffset, . - LABEL_CODE32_SEG
     mov     $0xc,           %ah
-    mov     $'!',           %al
-    mov     %ax,            %gs:((80*17)*3)
-    jmp     .
-    iret
+    mov     $'H',           %al
+    mov     %ax,            %gs:((80*19)*2)
+    iretl
+
+
+Int80Handler:
+.set        Int80HandlerOffset, . - LABEL_CODE32_SEG
+    mov     $0xc,           %ah
+    mov     $'a',           %al
+    mov     %ax,            %gs:((80*20)*2)
+    iretl
+
+ClockHandler:
+.set        ClockHandlerOffset, . - LABEL_CODE32_SEG
+    incb    %gs:((80*20)*2)
+    mov     $0x20,          %al             # send EOI
+    out     %al,            $0x20
+    iretl
 
 
 Init8259A:
