@@ -4,18 +4,12 @@
 #
 
 
-#   Current Flow
-#   1. Get memory data by int 0x15
-#   2. Enter protected mode
-#   3. Jump to Code32 segment(R0)
-#   4. Show protected message
-#   5. Calculate memory size and show information
-#   6. Set page table and enable page mechanic
-#   7. Switch page, execute same virtual mem address, Foo(F)->Bar(B)
 
+.include "inc/pm.s"
+.include "inc/common.s"
 
-.include "pm.s"
 .code16
+
 
 .text
     jmp LABEL_BEGIN
@@ -27,17 +21,8 @@
 ###########################
 #   GDT                         BASE            LIMIT               ATTR
 LABEL_GDT:      Descriptor      0,              0,                  0           
-LABEL_CODE32_DESC:  Descriptor  0,              (Code32SegLen - 1), (DA_CR + DA_32)
-LABEL_DATA_DESC:    Descriptor  0,              (DataSegLen - 1),   DA_DRW
-LABEL_R0_STACK_DESC: Descriptor 0,              (Ring0StackLen - 1),  (DA_DRW + DA_32)
 LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             (DA_DRW+DA_DPL3)
 
-LABEL_LDT_DESC:     Descriptor  0,              (LdtLen - 1),       DA_LDT
-
-LABEL_R3_CODE_DESC: Descriptor  0,              (Ring3CodeSegLen - 1), (DA_C + DA_32 + DA_DPL3)
-LABEL_R3_STACK_DESC: Descriptor 0,              (Ring3StackLen - 1), (DA_DRWA + DA_32 + DA_DPL3)
-
-LABEL_TSS_DESC:     Descriptor  0,              (TssLen - 1),       DA_386TSS
 
 # don't initial in code 16
 #LABEL_PAGE_DIR_DESC: Descriptor PageDirBase,    4095,               DA_DRW
@@ -45,42 +30,9 @@ LABEL_TSS_DESC:     Descriptor  0,              (TssLen - 1),       DA_386TSS
 LABEL_FLAT_C_DESC:  Descriptor  0,              0xfffff,            (DA_CR + DA_32 + DA_LIMIT_4K)
 LABEL_FLAT_RW_DESC: Descriptor  0,              0xfffff,            (DA_DRW + DA_LIMIT_4K)
 
-
-
-LABEL_CG_DEST_DESC: Descriptor  0,              (CGDestSegLen-1),   (DA_C + DA_32)
-
-#   Gate                        Selector            Offset  DCount  Attr
-LABEL_CALL_GATE:    Gate        CGDestSelector,     0,      0,      (DA_386CGate+DA_DPL3)
-
 .set        GdtLen,     . - LABEL_GDT
 GdtPtr:     .2byte      GdtLen - 1
             .4byte      0            
-
-
-#   LDT
-LABEL_LDT:      
-LABEL_LDT_A_DESC:   Descriptor  0,              (LdtASegLen - 1),  (DA_C + DA_32)
-
-.set        LdtLen,     . - LABEL_LDT
-
-#   IDT
-LABEL_IDT:
-                #               dest selector   offset              Dcount  Attr
-.rept       32
-                    Gate        Code32Selector, IdtHandlerOffset,   0,      (DA_386IGate)
-.endr
-
-INT_20:             Gate        Code32Selector, ClockHandlerOffset, 0,      (DA_386IGate)
-
-.rept       95
-                    Gate        Code32Selector, IdtHandlerOffset,   0,      (DA_386IGate)
-.endr
-
-INT_80:             Gate        Code32Selector, Int80HandlerOffset, 0,      (DA_386IGate)
-
-.set        IdtLen,     . - LABEL_IDT
-IdtPtr:     .2byte      IdtLen - 1
-            .4byte      0    
 
 
 
@@ -89,28 +41,12 @@ IdtPtr:     .2byte      IdtLen - 1
 #                         #
 ###########################
 #   GDT Selector
-.set        Code32Selector, (LABEL_CODE32_DESC - LABEL_GDT)
-.set        DataSelector,   (LABEL_DATA_DESC - LABEL_GDT)
-.set        Ring0StackSelector,  (LABEL_R0_STACK_DESC - LABEL_GDT)
 .set        VideoSelector,  (LABEL_VIDEO_DESC - LABEL_GDT)
-.set        CGDestSelector, (LABEL_CG_DEST_DESC - LABEL_GDT)
-.set        LdtSelector,    (LABEL_LDT_DESC - LABEL_GDT)
 
-.set        Ring3CodeSelector, (LABEL_R3_CODE_DESC - LABEL_GDT + SA_RPL3)
-.set        Ring3StackSelector, (LABEL_R3_STACK_DESC - LABEL_GDT + SA_RPL3)
-
-.set        TssSelector,    (LABEL_TSS_DESC - LABEL_GDT)
 #.set        PageDirSelector, (LABEL_PAGE_DIR_DESC - LABEL_GDT)
 #.set        PageTblSelector, (LABEL_PAGE_TBL_DESC - LABEL_GDT)
 .set        FlatCSelector,  (LABEL_FLAT_C_DESC - LABEL_GDT)
 .set        FlatRWSelector, (LABEL_FLAT_RW_DESC - LABEL_GDT)
-
-
-#   LDT Selector
-.set        LdtASelector,   (LABEL_LDT_A_DESC - LABEL_LDT + SA_TIL)
-
-#   Gate Selector
-.set        CallGateSelector,   (LABEL_CALL_GATE - LABEL_GDT + SA_RPL3)
 
 
 
@@ -173,70 +109,6 @@ ColCount:   .byte       2
 
 .set        DataSegLen,     (. - LABEL_DATA_SEG)
 
-
-
-#########################
-#   R0 Stack segment    #
-#                       # 
-#   Ring 0              #
-#   R/W                 #
-#   32 bits             #
-#########################
-LABEL_R0_STACK:
-.space      512,        0
-.set        Ring0StackLen,    (. - LABEL_R0_STACK)
-
-
-
-#########################
-#   R3 Stack segment    #
-#                       #   
-#   Ring 3              #
-#   R/W                 #
-#   32 bits             #
-#########################
-LABEL_R3_STACK:
-.space      512,        0
-.set        Ring3StackLen,    (. - LABEL_R3_STACK)
-
-
-
-#############################
-#   Task state segment      #
-#                           # 
-#   i386                    #   
-#############################
-LABEL_TSS:
-    .4byte          0                       #Back
-    .4byte          (Ring0StackLen - 1)       # ring0 stack
-    .4byte          Ring0StackSelector           
-    .4byte          0                       # ring1 stack
-    .4byte          0
-    .4byte          0                       # ring2 stack
-    .4byte          0
-    .4byte          0                       # CR3
-    .4byte          0                       # EIP
-    .4byte          0                       # EFLAGS
-    .4byte          0                       # EAX
-    .4byte          0                       # ECX
-    .4byte          0                       # EDX
-    .4byte          0                       # EBX
-    .4byte          0                       # ESP
-    .4byte          0                       # EBP
-    .4byte          0                       # ESI
-    .4byte          0                       # EDI
-    .4byte          0                       # ES
-    .4byte          0                       # CS
-    .4byte          0                       # SS
-    .4byte          0                       # DS
-    .4byte          0                       # FS
-    .4byte          0                       # GS
-    .4byte          0                       # LDT
-    .2byte          0                       # Test trap sign
-    .2byte          (. - LABEL_TSS + 2)     # I/O base address
-    .byte           0xff                    # I/O end sign
-
-.set        TssLen,         (. - LABEL_TSS)
 
 
 
