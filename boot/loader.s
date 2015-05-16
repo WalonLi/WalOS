@@ -1,6 +1,6 @@
 #
 #   Provide by Walon Li
-#   2015/5/5
+#   2015/5/16
 #
 
 
@@ -26,7 +26,7 @@ LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             (DA_DRW+DA_D
 #LABEL_PAGE_DIR_DESC: Descriptor PageDirBase,    4095,               DA_DRW
 #LABEL_PAGE_TBL_DESC: Descriptor PageTblBase,    (4096*8-1),         DA_DRW      #DA_LIMIT_4K
 LABEL_FLAT_C_DESC:  Descriptor  0,              0xfffff,            (DA_CR + DA_32 + DA_LIMIT_4K)
-LABEL_FLAT_RW_DESC: Descriptor  0,              0xfffff,            (DA_DRW + DA_LIMIT_4K)
+LABEL_FLAT_RW_DESC: Descriptor  0,              0xfffff,            (DA_DRW + DA_32 + DA_LIMIT_4K)
 
 .set        GdtLen,     . - LABEL_GDT
 GdtPtr:     .2byte      GdtLen - 1
@@ -48,6 +48,8 @@ GdtPtr:     .2byte      GdtLen - 1
 
 
 
+
+
 #########################
 #   Data segment        #
 #                       #  
@@ -61,13 +63,12 @@ _gSectorNo:              .2byte  0               # Sector number to read
 _gOdd:                   .byte   0               # odd or even?
 
 _KernelName:     .asciz      "KERNEL  BIN"
-_PrintCount:     .byte       2
 
 # Boot string table
-_Booting:        .ascii      "Boot to kernel......"
-_LoadSuccess:    .ascii      "Load kernel success."
-_LoadFail:       .ascii      "Load kernel Fail...."
-.set            MsgLen,     20
+_Booting:        .ascii      "Boot to kernel.."
+_LoadSuccess:    .ascii      "Load kernel ok.."
+_LoadFail:       .ascii      "Load kernel Fail"
+.set            MsgLen,     16
 
 # 16 bit mode data
 _MemSize:   .4byte      0
@@ -87,6 +88,7 @@ _MemInfoMsg: .asciz      "BaseAddrL   BaseAddrH   LengthLow   LengthHigh  Type"
 _MemDataMsg: .asciz      "00000000    00000000    00000000    00000000    00000000"
 _MemSizeMsg: .asciz      "RAM size:   00000000"   
 _InterruptMsg: .asciz    "Open 8295A interrupt."
+_PageMechanicMsg: .asciz "Enable Page Mechanic."
 _PageTblCnt: .4byte      0
 _ErrorMsg:   .asciz      "ERROR Message."
 _MemByteCnt: .byte       0
@@ -94,35 +96,34 @@ _ColCount:   .byte       2
 
 
 # PM mode data offset table
-.set        MemSize,        (_MemSize - LABEL_DATA_SEG)
-.set        MCRNumber,      (_MCRNumber - LABEL_DATA_SEG)
-.set        ARDStruct,      (_ARDStruct - LABEL_DATA_SEG)
-    .set            BaseAddrLow,     (_BaseAddrLow - LABEL_DATA_SEG)
-    .set            BaseAddrHigh,    (_BaseAddrHigh - LABEL_DATA_SEG)
-    .set            LengthLow,       (_LengthLow - LABEL_DATA_SEG)
-    .set            LengthHigh,      (_LengthHigh - LABEL_DATA_SEG)
-    .set            Type,            (_Type - LABEL_DATA_SEG)
-.set        MemChkBuf,      (_MemChkBuf - LABEL_DATA_SEG)
+.set        MemSize,        (_MemSize + BaseOfLoaderPhyAddr)
+.set        MCRNumber,      (_MCRNumber + BaseOfLoaderPhyAddr)
+.set        ARDStruct,      (_ARDStruct + BaseOfLoaderPhyAddr)
+    .set            BaseAddrLow,     (_BaseAddrLow + BaseOfLoaderPhyAddr)
+    .set            BaseAddrHigh,    (_BaseAddrHigh + BaseOfLoaderPhyAddr)
+    .set            LengthLow,       (_LengthLow + BaseOfLoaderPhyAddr)
+    .set            LengthHigh,      (_LengthHigh + BaseOfLoaderPhyAddr)
+    .set            Type,            (_Type + BaseOfLoaderPhyAddr)
+.set        MemChkBuf,      (_MemChkBuf + BaseOfLoaderPhyAddr)
 
 
-.set        PMMsg,    (_PMMsg - LABEL_DATA_SEG)
-.set        LDTMsg,   (_LDTMsg - LABEL_DATA_SEG)
-.set        MemInfoMsg, (_MemInfoMsg - LABEL_DATA_SEG)
-.set        MemDataMsg,   (_MemDataMsg - LABEL_DATA_SEG)
-.set        MemSizeMsg,   (_MemSizeMsg - LABEL_DATA_SEG)
-.set        InterruptMsg,   (_InterruptMsg - LABEL_DATA_SEG)
-.set        ErrorMsg, (_ErrorMsg - LABEL_DATA_SEG)
-.set        ColCount, (_ColCount - LABEL_DATA_SEG)
+.set        PMMsg,    (_PMMsg + BaseOfLoaderPhyAddr)
+.set        LDTMsg,   (_LDTMsg + BaseOfLoaderPhyAddr)
+.set        MemInfoMsg, (_MemInfoMsg + BaseOfLoaderPhyAddr)
+.set        MemDataMsg,   (_MemDataMsg + BaseOfLoaderPhyAddr)
+.set        MemSizeMsg,   (_MemSizeMsg + BaseOfLoaderPhyAddr)
+.set        InterruptMsg,   (_InterruptMsg + BaseOfLoaderPhyAddr)
+.set        ErrorMsg, (_ErrorMsg + BaseOfLoaderPhyAddr)
+.set        ColCount, (_ColCount + BaseOfLoaderPhyAddr)
+.set        PageMechanicMsg, (_PageMechanicMsg + BaseOfLoaderPhyAddr)
 
-.set        PageTblCnt, (_PageTblCnt - LABEL_DATA_SEG)
+.set        PageTblCnt, (_PageTblCnt + BaseOfLoaderPhyAddr)
 
-.set        DataSegLen,     (. - LABEL_DATA_SEG)
+.set        DataSegLen,     (. + BaseOfLoaderPhyAddr)
 
 
 StackSeg:   .space      1024,        0
 .set        TopOfStack, BaseOfLoaderPhyAddr + .
-
-
 
 ##########################################################
 #   LABEL_BEGIN             
@@ -163,8 +164,6 @@ get_mem_info_loop:
 mem_chk_fail:
     movl    $0,         _MCRNumber
 mem_chk_ok:
-
-
 
     # Reset floppy
     xor     %ah,    %ah
@@ -268,7 +267,6 @@ file_loaded:
     mov     $1,         %dh
     call    ShowMsgInRealMode                             # Show Load success
 
-
     # loading GDTR(Global Descriptor Table Register)
     lgdtw   GdtPtr
 
@@ -284,7 +282,6 @@ file_loaded:
     movl    %cr0,       %eax
     orl     $1,         %eax
     movl    %eax,       %cr0       
-
 
     # Mixed Jump
     ljmpl   $FlatCSelector, $(BaseOfLoaderPhyAddr+LABEL_PM_BEGIN)
@@ -327,15 +324,12 @@ msg_color_white:
     mov     $0x7,       %bx
 msg_color_end:
 
-    mov     (_PrintCount), %dh
+    mov     (_ColCount), %dh
     mov     $0,         %dl
     int     $0x10
 
     # PrintCount++
-    incb    _PrintCount
-    #mov     (PrintCount), %ah
-    #add     $1,         %ah
-    #mov     %ah,        (PrintCount)
+    incb    _ColCount
     ret  
 
 
@@ -457,7 +451,7 @@ LABEL_PM_BEGIN:
 
     mov     $0xf,       %ah
     mov     $'P',       %al
-    movw    %ax,        %gs:((80*0+39)*2)
+    movw    %ax,        %gs:((80*20+39)*2)
 
     jmp     .
 #    mov $0xb800,    %ax                 # video segment
@@ -500,6 +494,9 @@ ShowMsgInProtectedMode:
     cmpb    $5,         %al
     je      msg_5
 
+    cmpb    $6,         %al
+    je      msg_6
+
     jmp     msg_error
 
 msg_0:    
@@ -526,6 +523,10 @@ msg_5:
     movl    $InterruptMsg, %esi
     jmp     msg_end
 
+msg_6:
+    movl    $PageMechanicMsg, %esi
+    jmp     msg_end
+
 msg_error:
     movl    $ErrorMsg, %esi
 
@@ -533,6 +534,7 @@ msg_end:
 
     # Get ColCount value
     xor     %eax,       %eax
+
     movb    %ds:(ColCount), %al
     movb    $160,       %bl
     mul     %bl
@@ -541,7 +543,6 @@ msg_end:
     movb    $0x7,       %ah
     
     cld 
-
 show_msg:
     lodsb
     cmp     $0,         %al
@@ -729,6 +730,9 @@ SetupPageMechanism:
     # PT have 1024 PTE
     # PTE have 1 PA(Physical Address)
 
+    movb    $6,         %al
+    call    ShowMsgInProtectedMode
+
     # calculate how many PDE and PTE to initial
     xor     %edx,           %edx
     mov     (MemSize),      %eax      
@@ -753,7 +757,6 @@ init_dir:
     loop    init_dir 
 
 
-
     # initial Page Table
     mov     (PageTblCnt), %eax
     mov     $1024,          %ebx        # each 
@@ -766,7 +769,6 @@ init_tbl:
     stosl
     add     $4096,          %eax
     loop    init_tbl
-
 
 
     # load into CR3 and enable highest bit(PG) in CR0
@@ -813,3 +815,6 @@ copy_end:
     mov     %ebp,           %esp
     pop     %ebp
     ret
+
+
+

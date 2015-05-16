@@ -8,7 +8,7 @@ CP=cp
 ECHO=echo
 MAKE=make
 
-SUBDIRS=boot
+SUBDIRS=boot kernel
 
 .PHONY: subdirs $(SUBDIRS)
 subdirs: $(SUBDIRS)
@@ -26,6 +26,7 @@ copy: boot.img boot/loader.bin
 	@mkdir -p /tmp/floppy;\
 	mount -o loop boot.img /tmp/floppy/ -o fat=12;\
 	cp loader.bin /tmp/floppy/;\
+	cp kernel.bin /tmp/floppy/;\
 	umount /tmp/floppy/;\
 	rm -rf /tmp/floppy/;
 

@@ -1,6 +1,6 @@
 #
 #   Provide by Walon Li
-#   2015/03/25
+#   2015/05/16
 #
 
 
@@ -30,10 +30,10 @@ LoaderName:     .asciz      "LOADER  BIN"
 PrintCount:     .byte       0
 
 # Boot string table
-Booting:        .ascii      "Booting......"
-LoadSuccess:    .ascii      "Load success."
-LoadFail:       .ascii      "Load Fail...."
-.set            MsgLen,     13
+Booting:        .ascii      "Boot to loader.."
+LoadSuccess:    .ascii      "Load loader ok.."
+LoadFail:       .ascii      "Load loader Fail"
+.set            MsgLen,     16
 
 
 
