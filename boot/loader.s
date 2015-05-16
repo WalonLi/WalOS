@@ -4,17 +4,15 @@
 #
 
 
-
-.include "inc/pm.s"
-.include "inc/common.s"
-
 .code16
 
 
 .text
     jmp LABEL_BEGIN
 
-
+.include "inc/pm.s"
+.include "inc/common.s"
+.include "inc/fat12.s"
 ###########################
 #   Descriptor Area       #
 #                         #
@@ -32,7 +30,7 @@ LABEL_FLAT_RW_DESC: Descriptor  0,              0xfffff,            (DA_DRW + DA
 
 .set        GdtLen,     . - LABEL_GDT
 GdtPtr:     .2byte      GdtLen - 1
-            .4byte      0            
+            .4byte      BaseOfLoaderPhyAddr + LABEL_GDT      
 
 
 
@@ -58,6 +56,19 @@ GdtPtr:     .2byte      GdtLen - 1
 #########################
 LABEL_DATA_SEG:
 
+_gRootDirSizeForLoop:    .2byte  RootDirSectors
+_gSectorNo:              .2byte  0               # Sector number to read
+_gOdd:                   .byte   0               # odd or even?
+
+_KernelName:     .asciz      "KERNEL  BIN"
+_PrintCount:     .byte       2
+
+# Boot string table
+_Booting:        .ascii      "Boot to kernel......"
+_LoadSuccess:    .ascii      "Load kernel success."
+_LoadFail:       .ascii      "Load kernel Fail...."
+.set            MsgLen,     20
+
 # 16 bit mode data
 _MemSize:   .4byte      0
 _MCRNumber: .4byte      0                   # memory check result
@@ -70,21 +81,19 @@ _ARDStruct:                                 # Address Range Descriptor Structure
 _MemChkBuf: .space      256,        0
 
 
-
-# 32 bit mode data
-PMMsg:      .asciz      "Switch to Protected mode success."
-LDTMsg:     .asciz      "Jump to LDT segment success."
-MemInfoMsg: .asciz      "BaseAddrL   BaseAddrH   LengthLow   LengthHigh  Type"
-MemDataMsg: .asciz      "00000000    00000000    00000000    00000000    00000000"
-MemSizeMsg: .asciz      "RAM size:   00000000"   
-InterruptMsg: .asciz    "Open 8295A interrupt."
-PageTblCnt: .4byte      0
-ErrorMsg:   .asciz      "ERROR Message."
-MemByteCnt: .byte       0
-ColCount:   .byte       2
+_PMMsg:      .asciz      "Switch to Protected mode success."
+_LDTMsg:     .asciz      "Jump to LDT segment success."
+_MemInfoMsg: .asciz      "BaseAddrL   BaseAddrH   LengthLow   LengthHigh  Type"
+_MemDataMsg: .asciz      "00000000    00000000    00000000    00000000    00000000"
+_MemSizeMsg: .asciz      "RAM size:   00000000"   
+_InterruptMsg: .asciz    "Open 8295A interrupt."
+_PageTblCnt: .4byte      0
+_ErrorMsg:   .asciz      "ERROR Message."
+_MemByteCnt: .byte       0
+_ColCount:   .byte       2
 
 
-
+# PM mode data offset table
 .set        MemSize,        (_MemSize - LABEL_DATA_SEG)
 .set        MCRNumber,      (_MCRNumber - LABEL_DATA_SEG)
 .set        ARDStruct,      (_ARDStruct - LABEL_DATA_SEG)
@@ -96,19 +105,22 @@ ColCount:   .byte       2
 .set        MemChkBuf,      (_MemChkBuf - LABEL_DATA_SEG)
 
 
-.set        PMMsgOffset,    (PMMsg - LABEL_DATA_SEG)
-.set        LDTMsgOffset,   (LDTMsg - LABEL_DATA_SEG)
-.set        MemInfoMsgOffset, (MemInfoMsg - LABEL_DATA_SEG)
-.set        MemDataMsgOffset,   (MemDataMsg - LABEL_DATA_SEG)
-.set        MemSizeMsgOffset,   (MemSizeMsg - LABEL_DATA_SEG)
-.set        InterruptMsgOffset,   (InterruptMsg - LABEL_DATA_SEG)
-.set        ErrorMsgOffset, (ErrorMsg - LABEL_DATA_SEG)
-.set        ColCountOffset, (ColCount - LABEL_DATA_SEG)
+.set        PMMsg,    (_PMMsg - LABEL_DATA_SEG)
+.set        LDTMsg,   (_LDTMsg - LABEL_DATA_SEG)
+.set        MemInfoMsg, (_MemInfoMsg - LABEL_DATA_SEG)
+.set        MemDataMsg,   (_MemDataMsg - LABEL_DATA_SEG)
+.set        MemSizeMsg,   (_MemSizeMsg - LABEL_DATA_SEG)
+.set        InterruptMsg,   (_InterruptMsg - LABEL_DATA_SEG)
+.set        ErrorMsg, (_ErrorMsg - LABEL_DATA_SEG)
+.set        ColCount, (_ColCount - LABEL_DATA_SEG)
 
-.set        PageTblCntOffset, (PageTblCnt - LABEL_DATA_SEG)
+.set        PageTblCnt, (_PageTblCnt - LABEL_DATA_SEG)
 
 .set        DataSegLen,     (. - LABEL_DATA_SEG)
 
+
+StackSeg:   .space      1024,        0
+.set        TopOfStack, BaseOfLoaderPhyAddr + .
 
 
 
@@ -152,55 +164,116 @@ mem_chk_fail:
     movl    $0,         _MCRNumber
 mem_chk_ok:
 
+
+
+    # Reset floppy
+    xor     %ah,    %ah
+    xor     %dh,    %dh
+    int     $0x13
+
+    movw    $SecNoOfRootDir, (_gSectorNo)   
+search_kernel_in_root_dir:
+    cmpw    $0,         (_gRootDirSizeForLoop)   # check root dir loop
+    jz      no_kernel
+    decw    (_gRootDirSizeForLoop)               # loop--
+
+    mov     $BaseOfKernel, %ax
+    mov     %ax,        %es                     
+    mov     $OffsetOfKernel, %bx                # es:bx
+    mov     (_gSectorNo), %ax                    # %ax <- sector number
+    mov     $1,         %cl                     # how many sector will be read
+    call    ReadSector
+
+
+    mov     $_KernelName, %si                    # ds:si = "LOADER  BIN"
+    mov     $OffsetOfKernel, %di                # BaseOfLoader<<4+100
+    cld
+
+    mov     $0x10,      %dx                     # each sector have 0x10 x 0x20 byts
+search_for_kernel_bin:
+    cmp     $0,         %dx
+    jz      next_sector_in_root_dir
+    dec     %dx
+
+    # compare file name
+    mov     $11,        %cx
+compare_file_name:
+    cmp     $0,         %cx
+    jz      file_name_found               # if cx == 0, file name is matche
+    dec     %cx
+    lodsb                                       # %ds:(%si) -> %al
+    cmp     %es:(%di),  %al
     
-    # initial 32 code segment descriptor
-    InitDescriptor LABEL_CODE32_SEG, LABEL_CODE32_DESC
-
-    # initial data segment descriptor
-    InitDescriptor LABEL_DATA_SEG, LABEL_DATA_DESC
-
-    # initial stack segment descriptor
-    InitDescriptor LABEL_R0_STACK, LABEL_R0_STACK_DESC
-
-    # initial gate test segment descriptor
-    InitDescriptor LABEL_CG_DEST_SEG, LABEL_CG_DEST_DESC
-
-    # initial LDT descriptor
-    InitDescriptor LABEL_LDT, LABEL_LDT_DESC
-
-    # initial LDT_A descriptor in LDT
-    InitDescriptor LABEL_LDT_A_SEG, LABEL_LDT_A_DESC
-
-    # initial Ring3 code and stack
-    InitDescriptor LABEL_R3_CODE_SEG, LABEL_R3_CODE_DESC
-    InitDescriptor LABEL_R3_STACK, LABEL_R3_STACK_DESC
-
-    # initial TSS
-    InitDescriptor LABEL_TSS, LABEL_TSS_DESC
-
-    # initial IDT
-    xor     %eax,       %eax
-    mov     %ds,        %ax
-    shl     $4,         %eax
-    add     $LABEL_IDT, %eax
-    movl    %eax,       (IdtPtr+2)
+    jz      next_character      
+    jmp     file_name_not_match
 
 
-    # for loading gdtr
-    xor     %eax,       %eax
-    mov     %ds,        %ax
-    shl     $4,         %eax
-    add     $LABEL_GDT, %eax
-    movl    %eax,       (GdtPtr+2)
+    # file name not matched, check next 0x20 bytes
+file_name_not_match:                      
+    and     $0xffe0,    %di
+    add     $0x20,      %di
+    mov     $_KernelName, %si      
+    jmp     search_for_kernel_bin
+
+    # compare next character
+next_character:
+    inc     %di
+    jmp     compare_file_name
+
+
+next_sector_in_root_dir:
+    addw    $1,         (_gSectorNo)
+    jmp     search_kernel_in_root_dir
+
+
+    # Not found LOADER.BIN in root dir
+no_kernel:
+    mov     $2,         %dh
+    call    ShowMsgInRealMode                             # show load fail message
+    jmp     .
+
+
+    # file name found
+file_name_found:
+    mov     $RootDirSectors, %ax
+    and     $0xffe0,    %di                     # reset Entry, now, es:di is entry of head
+    add     $0x1a,      %di                     # offset 0x1a record first sector number
+    mov     %es:(%di),  %cx
+    push    %cx                                 # restore first sector to stack
+    add     %ax,        %cx                     
+    add     $DeltaSecNo, %cx                    # LOADER.BIN's start sector saved in %cl
+    mov     $BaseOfKernel, %ax
+    mov     %ax,        %es                     # %es <- BaseOfLoader
+    mov     $OffsetOfKernel, %bx                # %bx <- OffsetOfLoader
+    mov     %cx,        %ax                     # %ax <- Sector number
+
+loading_file:
+    #call    PrintDot
+
+    mov     $1,         %cl
+    call    ReadSector
+    pop     %ax                                 # Got index of this sector in FAT
+    call    GetFATEntry
+    cmp     $0x0fff,    %ax                     # 0xfff means is the end sector
+    jz      file_loaded
+    push    %ax                                 # Save index of this sector in FAT
+    mov     $RootDirSectors, %dx
+    add     %dx,        %ax
+    add     $DeltaSecNo, %ax
+    add     (BPB_BytsPerSec), %bx
+    jmp     loading_file
+
+file_loaded:
+    call    CloseMotor
+    mov     $1,         %dh
+    call    ShowMsgInRealMode                             # Show Load success
+
 
     # loading GDTR(Global Descriptor Table Register)
     lgdtw   GdtPtr
 
     # close all interrupt
     cli
-
-    # load IDTR
-    lidt    IdtPtr
 
     # open A20 address line
     inb     $0x92,      %al
@@ -214,12 +287,145 @@ mem_chk_ok:
 
 
     # Mixed Jump
-    ljmpl   $Code32Selector, $0
+    ljmpl   $FlatCSelector, $(BaseOfLoaderPhyAddr+LABEL_PM_BEGIN)
+
+    jmp     .
 #.2byte      0xea66
 #.4byte      0x00000000
 #.2byte      SelectorCode32
 
 
+
+##########################################################
+#   ShowMsgInRealMode          
+#        
+#   dh = Boot string table index                    
+##########################################################
+ShowMsgInRealMode:
+    mov     $MsgLen,    %ax
+    mul     %dh
+    add     $_Booting,   %ax
+    mov     %ax,        %bp
+
+    # let es = ds
+    mov     %ds,        %ax
+    mov     %ax,        %es
+
+    mov     $MsgLen,    %cx
+
+    # call int 10h to show character
+    mov     $0x1301,    %ax
+
+    cmp     $2,         %dh
+    jz      msg_color_red
+    jmp     msg_color_white
+
+msg_color_red:
+    mov     $0xc,       %bx
+    jmp     msg_color_end
+msg_color_white:
+    mov     $0x7,       %bx
+msg_color_end:
+
+    mov     (_PrintCount), %dh
+    mov     $0,         %dl
+    int     $0x10
+
+    # PrintCount++
+    incb    _PrintCount
+    #mov     (PrintCount), %ah
+    #add     $1,         %ah
+    #mov     %ah,        (PrintCount)
+    ret  
+
+
+
+######################################################
+#   ReadSector
+#       
+#   Read %cl sector from %ax floppy sector to es:bx
+#   x/(BPB_SecPerTrk) = y
+#   x%(BPB_SecPerTrk) = z
+#   z+1 = start sector number
+#   y/BPB_NumHeads = cylinder number
+#   y & 1 = magnetic header
+######################################################
+ReadSector:
+    push    %ebp
+    mov     %esp,   %ebp
+    sub     $2,     %esp        # Reserve 2byte space
+    mov     %cl,    -2(%ebp)    # Restore cl
+    push    %bx                 
+    mov     (BPB_SecPerTrk), %bl # bl is divider 
+    div     %bl                 # y in al, z in ah
+    inc     %ah                 # z++, get start sector
+    mov     %ah,    %cl         
+    mov     %al,    %dh         
+    shr     $1,     %al         # y/BPB_Numhead
+    mov     %al,    %ch         
+    and     $1,     %dh         
+    pop     %bx     
+
+    # %ch = cylinder number
+    # %cl = start sector number
+    # %dh = magnetic header
+    mov     (BS_DrvNum), %dl
+reading:
+    mov     $2,     %ah
+    mov     -2(%ebp), %al       # Read %al sectors 
+    int     $0x13
+    jc      reading             # check CF, if == 1, read again
+    add     $2,%esp
+    pop     %ebp
+    ret
+
+######################################################
+#   GetFATEntry
+#
+######################################################
+GetFATEntry:
+    push    %es
+    push    %bx
+    push    %ax
+    mov     $BaseOfKernel, %ax
+    sub     $0x0100,    %ax
+    mov     %ax,        %es                 # Left 4K bytes for FAT 
+    pop     %ax
+    mov     $3,         %bx
+    mul     %bx                             # %dx:%ax = %ax*3 
+    mov     $2,         %bx
+    div     %bx                             # %dx:%ax/2 
+    movb    %dl,        (_gOdd)              # store remainder %dx in label bOdd. 
+    
+    xor     %dx,        %dx                 # Now %ax is the offset of FATEntry in FAT 
+    mov     (BPB_BytsPerSec), %bx
+    div     %bx                             # %dx:%ax/BPB_BytsPerSec 
+    push    %dx
+    mov     $0,         %bx
+    add     $SecNoOfFAT1, %ax               # %ax <- FATEntry sector 
+    mov     $2,         %cl                 # Read 2 sectors in 1 time, because FATEntry 
+    call    ReadSector                      # may be in 2 sectors. 
+    pop     %dx
+    add     %dx,        %bx
+    mov     %es:(%bx),  %ax                 # read FAT entry by word(2 bytes) 
+    cmpb    $0,         (_gOdd)             # remainder %dx(see above) == 0 ?
+    jz      even_2                          # NOTE: %ah: high address byte, %al: low byte 
+    shr     $4,         %ax
+even_2:
+    and     $0x0fff,    %ax
+    
+    pop     %bx
+    pop     %es
+    ret
+
+
+CloseMotor:
+    push    %dx
+    mov     $0x3f2,     %dx
+    mov     $0,         %al
+    out     %al,        %dx
+    pop     %dx
+    ret
 
 
 ##########################################################
@@ -228,58 +434,30 @@ mem_chk_ok:
 #   Protected mode entry    
 #   Initial ds, ss, gs, esp, TSS and do anything.
 ##########################################################
-LABEL_CODE32_SEG:
+LABEL_PM_BEGIN:
 .code32
-    mov     $DataSelector, %ax
-    mov     %ax,        %ds     
-
-    mov     $Ring0StackSelector, %ax
-    mov     %ax,        %ss  
 
     mov     $VideoSelector, %ax
     mov     %ax,        %gs
 
-    mov     $(Ring0StackLen-1), %esp
+    mov     $FlatRWSelector, %ax
+    mov     %ax,        %ds
+    mov     %ax,        %es
+    mov     %ax,        %fs 
+    mov     %ax,        %ss
+    mov     $TopOfStack, %esp
+
 
     movb    $0,         %al
-    call    ShowCStyleMsg
-
-    call    Init8259A
-
-    # open a interrupt flag to test hardware clock interrupt. 
-    int     $0x80
-    sti
-    #jmp     . 
+    call    ShowMsgInProtectedMode
 
     # Sizing memory and load page table
     call    ShowMemInfo
-    #call    SetupPageMechanism
+    call    SetupPageMechanism
 
-    call    PagingDemo
-
-    # init 8259A hardware interrupt.
-
-
-
-    # load TSS
-#    mov     $TssSelector, %ax
-#    ltr     %ax
-
-    #Ring 3 test
-#    push    $Ring3StackSelector
-#    push    $(Ring3StackLen-1)
-#    push    $Ring3CodeSelector
-#    push    $0
-#    lret
-
-    #lcall   $CGDestSelector, $0
-    #lcall   $CallGateSelector, $0
-
-    # jump to LDT_A
-    # mov     $LdtSelector, %ax
-    # lldt    %ax
-
-    # lcall   $LdtASelector, $0
+    mov     $0xf,       %ah
+    mov     $'P',       %al
+    movw    %ax,        %gs:((80*0+39)*2)
 
     jmp     .
 #    mov $0xb800,    %ax                 # video segment
@@ -292,11 +470,11 @@ LABEL_CODE32_SEG:
 
 
 ##########################################################
-#   ShowCStyleMsg           
+#   ShowMsgInProtectedMode           
 #                           
 #   Show index:%al msg              
 ##########################################################
-ShowCStyleMsg:
+ShowMsgInProtectedMode:
     push    %eax
     push    %ebx
     push    %esi
@@ -325,37 +503,37 @@ ShowCStyleMsg:
     jmp     msg_error
 
 msg_0:    
-    movl    $PMMsgOffset, %esi
+    movl    $PMMsg, %esi
     jmp     msg_end
 
 msg_1:    
-    movl    $LDTMsgOffset, %esi
+    movl    $LDTMsg, %esi
     jmp     msg_end
 
 msg_2:
-    movl    $MemInfoMsgOffset, %esi
+    movl    $MemInfoMsg, %esi
     jmp     msg_end
 
 msg_3:
-    movl    $MemDataMsgOffset, %esi
+    movl    $MemDataMsg, %esi
     jmp     msg_end
 
 msg_4:
-    movl    $MemSizeMsgOffset, %esi
+    movl    $MemSizeMsg, %esi
     jmp     msg_end
 
 msg_5:
-    movl    $InterruptMsgOffset, %esi
+    movl    $InterruptMsg, %esi
     jmp     msg_end
 
 msg_error:
-    movl    $ErrorMsgOffset, %esi
+    movl    $ErrorMsg, %esi
 
 msg_end:
 
     # Get ColCount value
     xor     %eax,       %eax
-    movb    %ds:(ColCountOffset), %al
+    movb    %ds:(ColCount), %al
     movb    $160,       %bl
     mul     %bl
     mov     %eax,       %edi
@@ -373,7 +551,7 @@ show_msg:
     jmp     show_msg
 show_done:
 
-    incb    %ds:(ColCountOffset)
+    incb    %ds:(ColCount)
 
     pop     %edi
     pop     %esi
@@ -394,7 +572,7 @@ ShowMemInfo:
     push    %ecx
 
     movb    $2,         %al
-    call    ShowCStyleMsg
+    call    ShowMsgInProtectedMode
 
     movl    $MemChkBuf,     %esi
     movl    (MCRNumber),    %ecx
@@ -402,7 +580,7 @@ mem_info:
     push    %edi
     push    %ecx
 
-    mov     $MemDataMsgOffset,  %edi
+    mov     $MemDataMsg,    %edi
     mov     $5,             %edx
 x_1:
     lodsl
@@ -442,7 +620,7 @@ shf_end:
     pop     %edi
 
     mov     $3,             %al
-    call    ShowCStyleMsg
+    call    ShowMsgInProtectedMode
     call    CalculateMemSize
     loop    mem_info
 
@@ -561,14 +739,14 @@ SetupPageMechanism:
     jz      no_remainder
     inc     %ecx
 no_remainder:
-    movl     %ecx,          (PageTblCntOffset)   # restore
+    movl     %ecx,          (PageTblCnt)   # restore
 
     # initial Page Directory
     mov     $FlatRWSelector, %ax
     mov     %ax,            %es
-    mov     $PageDirBase0,  %edi
+    mov     $PageDirBase,   %edi
     xor     %eax,           %eax
-    movl    $(PageTblBase0 | PG_P | PG_USU | PG_RWW), %eax
+    movl    $(PageTblBase  | PG_P | PG_USU | PG_RWW), %eax
 init_dir:
     stosl
     add     $4096,          %eax
@@ -577,11 +755,11 @@ init_dir:
 
 
     # initial Page Table
-    mov     (PageTblCntOffset), %eax
+    mov     (PageTblCnt), %eax
     mov     $1024,          %ebx        # each 
     mul     %ebx
     mov     %eax,           %ecx
-    movl    $PageTblBase0,  %edi
+    movl    $PageTblBase,   %edi
     xor     %eax,           %eax
     movl    $(PG_P | PG_USU | PG_RWW), %eax
 init_tbl:
@@ -592,7 +770,7 @@ init_tbl:
 
 
     # load into CR3 and enable highest bit(PG) in CR0
-    mov     $PageDirBase0,  %eax
+    mov     $PageDirBase,   %eax
     mov     %eax,           %cr3
 
     mov     %cr0,           %eax
@@ -635,306 +813,3 @@ copy_end:
     mov     %ebp,           %esp
     pop     %ebp
     ret
-
-
-#
-PageSwitch:
-
-    mov     $FlatRWSelector, %ax
-    mov     %ax,            %es
-    mov     $PageDirBase1,  %edi
-    xor     %eax,           %eax
-    movl    $(PageTblBase1 | PG_P | PG_USU | PG_RWW), %eax
-    movl    (PageTblCntOffset), %ecx
-
-    
-switch_1:
-    stosl
-    add     $4096,          %eax
-    loop    switch_1
-    
-
-    movl    (PageTblCntOffset), %eax
-    shl     $10,            %eax    # eax * 1024
-    mov     %eax,           %ecx
-    mov     $PageTblBase1,  %edi
-    xor     %eax,           %eax
-
-    mov     $(PG_P | PG_USU | PG_RWW), %eax
-
-    
-switch_2:
-    
-    stosl
-    add     $4096,          %eax
-
-    loop    switch_2
-    
-    
-    # assume memory > 8mb
-    # backup oranges code
-    #mov     $LinearAddrDemo, %eax
-    #shr     $22,            %eax
-    #mov     $4096,          %ebx
-    #mul     %ebx
-    #mov     %eax,           %ecx
-    
-
-    mov     $LinearAddrDemo, %eax
-    shr     $12,            %eax
-    shl     $2,             %eax    # eax * 4
-    #and     $0x3ff,         %eax    # 1111111111b (10bit)
-    #mov     $4,             %ebx 
-    #mul     %ebx
-    #add     %ecx,           %eax
-    add     $PageTblBase1,  %eax
-    movl    $(ProcBar | PG_P | PG_USU | PG_RWW), %es:(%eax)
-
-
-    mov     $PageDirBase1,  %eax
-    mov     %eax,           %cr3
-
-    ret 
-
-
-
-PagingDemo:
-
-    # Move code seg to data seg
-    mov     %cs,            %ax
-    mov     %ax,            %ds
-    mov     $FlatRWSelector, %ax
-    mov     %ax,            %es
-    
-
-
-    push    $FooLen
-    push    $FooOffset
-    push    $ProcFoo
-    call    MemCpy
-    add     $12,            %esp
-
-    push    $BarLen
-    push    $BarOffset
-    push    $ProcBar
-    call    MemCpy
-    add     $12,            %esp
-
-    push    $PagingDemoProcLen
-    push    $PagingDemoProcOffset
-    push    $ProcPagingDemo
-    call    MemCpy
-    add     $12,            %esp
-
-    # restore ds and es
-    mov     $DataSelector,  %ax
-    mov     %ax,            %ds
-    mov     %ax,            %es
-
-    call    SetupPageMechanism
-
-    call    $FlatCSelector, $ProcPagingDemo
-
-    call    PageSwitch
-
-    call    $FlatCSelector, $ProcPagingDemo
-
-
-    #jmp     .
-    ret 
-
-
-PagingDemoProc:
-.set        PagingDemoProcOffset, . - LABEL_CODE32_SEG
-    mov     $LinearAddrDemo, %eax
-    call    %eax
-    lret
-.set        PagingDemoProcLen,  . - PagingDemoProc
-
-
-Foo:
-.set        FooOffset,      . - LABEL_CODE32_SEG
-    mov     $VideoSelector, %ax
-    mov     %ax,        %gs
-    mov     $0xc,           %ah
-    mov     $'F',           %al
-    mov     %ax,            %gs:((80*17)*2)
-    ret  
-.set        FooLen,         . - Foo
-
-
-Bar:
-.set        BarOffset,      . - LABEL_CODE32_SEG
-    mov     $VideoSelector, %ax
-    mov     %ax,        %gs
-    mov     $0xc,           %ah
-    mov     $'B',           %al
-    mov     %ax,            %gs:((80*18)*2)
-    ret  
-.set        BarLen,         . - Bar
-
-IdtHandler:
-.set        IdtHandlerOffset, . - LABEL_CODE32_SEG
-    mov     $0xc,           %ah
-    mov     $'H',           %al
-    mov     %ax,            %gs:((80*19)*2)
-    iretl
-
-
-Int80Handler:
-.set        Int80HandlerOffset, . - LABEL_CODE32_SEG
-    mov     $0xc,           %ah
-    mov     $'a',           %al
-    mov     %ax,            %gs:((80*20)*2)
-    iretl
-
-ClockHandler:
-.set        ClockHandlerOffset, . - LABEL_CODE32_SEG
-    incb    %gs:((80*20)*2)
-    mov     $0x20,          %al             # send EOI
-    out     %al,            $0x20
-    iretl
-
-
-Init8259A:
-
-    movb    $5,         %al
-    call    ShowCStyleMsg
-
-    # ICW1
-    mov     $0x11,          %al
-    out     %al,            $0x20           #init master 8259
-    call    IODelay
-
-    out     %al,            $0xA0           #init slave 8259
-    call    IODelay
-
-    # ICW2
-    mov     $0x20,          %al
-    out     %al,            $0x21           # IRQ0 map to 0x20
-    call    IODelay
-
-    mov     $0x28,          %al
-    out     %al,            $0xA1           # IRQ8 map to 0xA0
-    call    IODelay
-
-    # ICW3
-    mov     $0x4,           %al
-    out     %al,            $0x21           # IR2 have slave 8259
-    call    IODelay
-
-    mov     $0x2,           %al
-    out     %al,            $0xA1           # map to master
-    call    IODelay
-
-    # ICW4
-    mov     $0x1,           %al
-    out     %al,            $0x21
-    call    IODelay
-
-    out     %al,            $0xA1
-    call    IODelay
-
-    # OCW1
-    mov     $0xfe,          %al             # only open timer interrupt, 0=open, 1=close
-    #mov     $0xff,          %al            # disable master 8259 interrupt
-    out     %al,            $0x21
-    call    IODelay
-
-    mov     $0xff,          %al            # disable master 8259 interrupt
-    out     %al,            $0xA1
-    call    IODelay
-
-    # OCW2                                 # send EOI(End of interrupt) to 8259, continue recived interrupt signal
-    #mov     $0x20,          %al           # 00000100b
-    #out     %al,            $0x20/$0xA0
-     
-    ret 
-
-
-IODelay:
-    nop
-    nop
-    nop
-    nop
-    ret
-
-.set        Code32SegLen,   . - LABEL_CODE32_SEG
-
-
-
-
-##########################################################
-#   LABEL_LDT_A_SEG           
-#                           
-#   Test code with LDT.
-#   If success, it will show 'L'          
-##########################################################
-LABEL_LDT_A_SEG:
-
-    mov     $VideoSelector, %ax
-    mov     %ax,        %gs
-
-    movl    $((80*11 + 20) *2), %edi
-    movb    $0xC,       %ah
-    movb    $'L',       %al
-    mov     %ax,        %gs:(%edi)
-
-    lret
-.set        LdtASegLen,     . - LABEL_LDT_A_SEG
-
-
-
-
-##########################################################
-#   LABEL_CG_DEST_SEG           
-#                           
-#   Test code with Call Gate.
-#   If success, it will show 'G'          
-##########################################################
-LABEL_CG_DEST_SEG:
-
-    mov     $VideoSelector, %ax
-    mov     %ax,        %gs
-
-    movl    $((80*12 + 20) *2), %edi
-    movb    $0xC,       %ah
-    movb    $'G',       %al
-    mov     %ax,        %gs:(%edi)
-
-    # jump to LDT_A
-    mov     $LdtSelector, %ax
-    lldt    %ax
-    lcall   $LdtASelector, $0
-
-    lret
-.set        CGDestSegLen,     . - LABEL_CG_DEST_SEG
-
-
-
-
-##########################################################
-#   LABEL_R3_CODE_SEG           
-#                           
-#   Test code with enter RING3 or not.
-#   If success, it will show '3' and 'O'      
-##########################################################
-LABEL_R3_CODE_SEG:
-    mov     $VideoSelector, %ax
-    mov     %ax,        %gs
-
-    movl    $((80*13 + 20) *2), %edi
-    movb    $0xC,       %ah
-    movb    $'3',       %al
-    mov     %ax,        %gs:(%edi)
-
-    lcall   $CallGateSelector, $0
-
-    movl    $((80*14 + 20) *2), %edi
-    movb    $0xC,       %ah
-    movb    $'O',       %al
-    mov     %ax,        %gs:(%edi)
-    jmp     .
-
-.set        Ring3CodeSegLen,     . - LABEL_R3_CODE_SEG
-
