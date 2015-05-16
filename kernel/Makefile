@@ -6,11 +6,6 @@
 CC=gcc
 LD=ld
 
-#LDFILES_BOOT=walos_x86_boot.ld
-#LDFILES_DOS=walos_x86_dos.ld
-
-OBJCPY=objcopy
-TRIM_FLAGS=-R .pdr -R .comment -R.note -S -O binary
 DD=dd
 RM=rm
 ECHO=echo
@@ -21,9 +16,10 @@ all: kernel.bin
 	@$(CP) kernel.bin ../
 
 kernel.bin: kernel.s
-	$(CC) -c kernel.s
-	$(LD) kernel.o -o kernel.elf
-	@$(OBJCPY) $(TRIM_FLAGS) kernel.elf kernel.bin
+	# workaround
+	# due to I have no idea to resolve elf64, so compile i386 for it.
+	$(CC) -m32 -c kernel.s
+	$(LD) -s -Ttext 0x30400 -melf_i386 kernel.o -o kernel.bin
 
 clean:
 	@$(RM) -f *.o *.elf *.bin boot.img bochsout.txt

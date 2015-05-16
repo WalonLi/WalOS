@@ -453,6 +453,9 @@ LABEL_PM_BEGIN:
     mov     $'P',       %al
     movw    %ax,        %gs:((80*20+39)*2)
 
+    call    InitKernel
+
+    jmp     $FlatCSelector, $KernelEntryPhyAddr
     jmp     .
 #    mov $0xb800,    %ax                 # video segment
 #    mov %ax,        %gs
@@ -816,5 +819,27 @@ copy_end:
     pop     %ebp
     ret
 
+InitKernel:
+    xor     %esi,           %esi
+    movw    (BaseOfKernelPhyAddr + 0x2c), %cx
+    movzx   %cx,            %ecx
+    movl    (BaseOfKernelPhyAddr + 0x1c), %esi
+    add     $BaseOfKernelPhyAddr, %esi
 
+init_kernel_begin:
+    mov     (%esi),         %eax
+    cmp     $0,             %eax
+    jz      no_action
+    pushl   0x10(%esi)
+    mov     4(%esi),        %eax
+    add     $BaseOfKernelPhyAddr, %eax
+    push    %eax
+    pushl   8(%esi)
+    call    MemCpy
+    add     $12,            %esp
 
+no_action:
+    add     $20,            %esi
+    dec     %ecx
+    jnz     init_kernel_begin
+    ret

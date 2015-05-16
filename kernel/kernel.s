@@ -13,7 +13,7 @@
 _start:
     mov     $0xf,       %ah
     mov     $'K',       %al
-    mov     %ax,        %gs:((80*50+39)*2)
+    mov     %ax,        %gs:((80*21+39)*2)
     jmp     .
 
 
