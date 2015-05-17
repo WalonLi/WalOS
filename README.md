@@ -12,7 +12,42 @@ It's a small x86 OS.
 
 [Intel® 64 and IA-32 Architectures Software Developer’s Manual](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html)
 
+[Executable and Linkable Format (ELF) document](http://flint.cs.yale.edu/cs422/doc/ELF_Format.pdf)
+
 ----
+
+#####Memory Layout(5/17)
+```
+        -------------------------
+        |                       |        
+        |     Page Tables       |
+0x101000|-----------------------|
+        |        PDT            |
+0x100000|-----------------------|
+        |                       |
+        |     Hardware          |        
+        |        Reserved       |
+        |                       |
+        |-----------------------|        
+        |        EBDA           |
+        |-----------------------|
+        |     loader.bin        |        
+        |                       |
+0x90000 |-----------------------|
+        |     kernel.bin        |        
+        |                       |
+0x80000 |-----------------------|
+        |     kernel            |        
+        |           Entry       |
+0x30000 |-----------------------|
+        |                       |        
+        |                       |
+        |                       |        
+        |                       |
+        |                       |        
+        |                       |
+0x0     -------------------------
+```
 
 ```
 GNU GENERAL PUBLIC LICENSE

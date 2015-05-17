@@ -820,21 +820,24 @@ copy_end:
     ret
 
 InitKernel:
+	# copy kernel code to real offset by ELF header
+	# 0x80000 -> 0x30400
+
     xor     %esi,           %esi
-    movw    (BaseOfKernelPhyAddr + 0x2c), %cx
+    movw    (BaseOfKernelPhyAddr + 0x2c), %cx	#ELF header->e_program header num
     movzx   %cx,            %ecx
-    movl    (BaseOfKernelPhyAddr + 0x1c), %esi
-    add     $BaseOfKernelPhyAddr, %esi
+    movl    (BaseOfKernelPhyAddr + 0x1c), %esi	#ELF header->e_program header offset 
+    add     $BaseOfKernelPhyAddr, %esi			#add kernel offset 
 
 init_kernel_begin:
     mov     (%esi),         %eax
     cmp     $0,             %eax
     jz      no_action
-    pushl   0x10(%esi)
+    pushl   0x10(%esi)							# size
     mov     4(%esi),        %eax
     add     $BaseOfKernelPhyAddr, %eax
-    push    %eax
-    pushl   8(%esi)
+    push    %eax								# src
+    pushl   8(%esi)								# dest
     call    MemCpy
     add     $12,            %esp
 
