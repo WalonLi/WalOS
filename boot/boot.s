@@ -5,7 +5,7 @@
 
 
 .code16
-.include "inc/common.s"
+.include "include/common.s"
 
 
 .text
@@ -15,7 +15,7 @@
 ###########################
     jmp LABEL_START                     # jmp boot 
     nop                                 # nop is required 
-.include "inc/fat12.s"
+.include "include/fat12.s"
 
 
 ###########################

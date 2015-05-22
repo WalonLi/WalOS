@@ -10,9 +10,9 @@
 .text
     jmp LABEL_BEGIN
 
-.include "inc/pm.s"
-.include "inc/common.s"
-.include "inc/fat12.s"
+.include "include/pm.s"
+.include "include/common.s"
+.include "include/fat12.s"
 ###########################
 #   Descriptor Area       #
 #                         #
