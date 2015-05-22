@@ -5,4 +5,5 @@
 *.img
 *.o
 
+build/
 bochsout.txt

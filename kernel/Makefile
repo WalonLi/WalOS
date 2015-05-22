@@ -9,7 +9,9 @@ LD=ld
 RM=rm
 ECHO=echo
 CP=cp
-GAS_LIBS=lib/string.s
+
+LIBS_PATH=../lib
+GAS_LIBS= $(LIBS_PATH)/string.s
 C_LIBS=
 
 
@@ -21,7 +23,7 @@ kernel.bin: kernel.s start.c $(GAS_LIBS) $(C_LIBS)
 	# workaround
 	# due to I have no idea to resolve elf64, so compile i386 for it.
 	$(CC) -m32 -c kernel.s $(GAS_LIBS)
-	$(CC) -m32 -fno-stack-protector -c start.c
+	$(CC) -m32 -fno-builtin -fno-stack-protector -I../ -c start.c
 	$(LD) -s -Ttext 0x30400 -melf_i386 kernel.o start.o $(GAS_LIBS:.s=.o) -o kernel.bin
 
 clean:

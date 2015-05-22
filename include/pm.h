@@ -7,17 +7,11 @@
 #define WALOS_PM_H
 
 #include "type.h"
+#include "pm.h"
 
 #define GDT_SIZE    128
 #define	IDT_SIZE	256
 
-uint8		gdt_ptr[6];	// 0-15:Limit  16-47:Base 
-DESCRIPTOR	gdt[GDT_SIZE];
-
-/*
-u8		idt_ptr[6];	// 0-15:Limit  16-47:Base
-GATE		idt[IDT_SIZE];
-*/
 
 typedef struct _DESCRIPTOR
 {
@@ -28,5 +22,16 @@ typedef struct _DESCRIPTOR
     uint8   limit_hight_attr2 ; // G:1 D:1 L:1 AVL:1 SegLimitHight:4
     uint8   base_hight ;
 } DESCRIPTOR ;
+
+
+
+uint8		gdt_ptr[6];	// 0-15:Limit  16-47:Base 
+DESCRIPTOR	gdt[GDT_SIZE];
+
+/*
+u8		idt_ptr[6];	// 0-15:Limit  16-47:Base
+GATE		idt[IDT_SIZE];
+*/
+
 
 #endif

@@ -9,7 +9,7 @@ romimage: file=/usr/share/bochs/BIOS-bochs-latest
 vgaromimage: file=/usr/share/vgabios/vgabios.bin
 #romimage: file=/usr/local/share/bochs/BIOS-bochs-latest #/usr/share/bochs/BIOS-bochs-latest
 
-floppya: 1_44=boot.img, status=inserted
+floppya: 1_44=build/boot.img, status=inserted
 #floppya: 1_44=freedos.img, status=inserted
 #floppyb: 1_44=pm.img, status=inserted
 #floppya: 1_44=abc.img status=inserted
