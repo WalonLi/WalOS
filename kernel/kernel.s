@@ -21,11 +21,8 @@ StackTop:
 .global     _start
 
 _start:
-    mov     $0xf,       %ah
-    mov     $'K',       %al
-    mov     %ax,        %gs:((80*21+39)*2)
-
     mov     $StackTop,   %esp
+    
     sgdtw   gdt_ptr
     call    cstart
     lgdtw   gdt_ptr

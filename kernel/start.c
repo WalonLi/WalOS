@@ -6,9 +6,15 @@
 #include "type.h"
 #include "pm.h"
 #include "string.h"
+#include "common.h"
 
 void cstart()
 {
+    // adjust position
+    for (int x = 0 ; x < 13 ; ++x) show_msg("\n") ;
+
+    show_msg("C start...\n") ;
+
     // Copy Loader's GDT to new GDT
     memcpy(&gdt,                                // new GDT
            (void*)(*(uint32*)(&gdt_ptr[2])),    // base of old GDT
@@ -21,5 +27,6 @@ void cstart()
     *gdt_limit = GDT_SIZE * sizeof(DESCRIPTOR) - 1 ;
     // set new base
     *gdt_base = (uint32)&gdt ;
+
     
 }

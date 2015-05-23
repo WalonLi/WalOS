@@ -3,29 +3,37 @@
 ##  2015/05/12
 ##
 
-CC=gcc
-LD=ld
-OBJCPY=objcopy
+CC = gcc
+LD = ld
+OBJCPY = objcopy
 
 
-MAKE=make
+MAKE = make
 
-SUBDIRS=boot kernel
+SUBDIRS = boot kernel
 
-BUILD=build
+BUILD = build
 
-TRIM_FLAGS=-R .pdr -R .comment -R.note -S -O binary
+TRIM_FLAGS = -R .pdr -R .comment -R.note -S -O binary
 
 
 # LD
-LDFILES_BOOT=boot/walos_x86_boot.ld
-LDFILES_DOS=boot/walos_x86_dos.ld
+LDFILES_BOOT = boot/walos_x86_boot.ld
+LDFILES_DOS = boot/walos_x86_dos.ld
 
-GAS_LIBS_SRC=lib/string.s
-C_LIBS_SRC=
 
-GAS_LIBS_OBJ= $(subst lib,build,$(GAS_LIBS_SRC:.s=.o))
-C_LIBS_OBJ= $(subst lib,build,$(C_LIBS_SRC:.s=.o))
+BIN_FILES = $(BUILD)/loader.bin $(BUILD)/kernel.bin
+
+
+GAS_LIBS_SRC = lib/string.s lib/common.s
+C_LIBS_SRC =
+
+GAS_LIBS_OBJ = $(subst lib,build,$(GAS_LIBS_SRC:.s=.o))
+C_LIBS_OBJ = $(subst lib,build,$(C_LIBS_SRC:.s=.o))
+
+C_FLAGS = -std=c99 -fno-builtin -fno-stack-protector
+
+
 #.PHONY: subdirs $(SUBDIRS)
 #subdirs: $(SUBDIRS)
 
@@ -33,7 +41,7 @@ C_LIBS_OBJ= $(subst lib,build,$(C_LIBS_SRC:.s=.o))
 # $? : all prerequisites
 # $@ : target
 
-all: $(BUILD)/boot.img $(BUILD)/loader.bin $(BUILD)/kernel.bin
+all: $(BUILD)/boot.img $(BIN_FILES)
 	@echo "********** DONE **********"
 
 # boot folder
@@ -62,13 +70,13 @@ $(BUILD)/kernel.bin: kernel/kernel.s kernel/start.c $(GAS_LIBS_SRC) $(C_LIBS_SRC
 # workaround
 # due to I have no idea to resolve elf64, so compile i386 for it.
 	$(foreach i, $(GAS_LIBS_SRC), $(CC) -m32 -c $(i) -o $(subst lib,build,$(i:.s=.o));)
-	$(foreach i, $(C_LIBS_SRC), $(CC) -m32 -fno-builtin -fno-stack-protector -c $(i) -o $(subst lib,build,$(i:.s=.o));) 
+	$(foreach i, $(C_LIBS_SRC), $(CC) -m32 $(C_FLAGS) -c $(i) -o $(subst lib,build,$(i:.s=.o));) 
 #	for i in $(GAS_LIBS_SRC); do \
 #		$(CC) -m32 -c $$i -o $(patsubst %.s,%.o, $$i) ; 
 #	done
 
 	$(CC) -m32 -c kernel/kernel.s -o $(BUILD)/kernel.o
-	$(CC) -m32 -fno-builtin -fno-stack-protector -Iinclude/ -c kernel/start.c -o $(BUILD)/start.o
+	$(CC) -m32 $(C_FLAGS) -Iinclude/ -c kernel/start.c -o $(BUILD)/start.o
 	$(LD) -s -Ttext 0x30400 -melf_i386 $(BUILD)/kernel.o $(BUILD)/start.o $(GAS_LIBS_OBJ) $(C_LIBS_OBJ) -o $@
 
 
@@ -77,7 +85,7 @@ $(BUILD)/kernel.bin: kernel/kernel.s kernel/start.c $(GAS_LIBS_SRC) $(C_LIBS_SRC
 #	@$(ECHO) "**********Making***********"
 #	$(MAKE) -C $@
 
-copy: $(BUILD)/loader.bin $(BUILD)/kernel.bin
+copy: $(BIN_FILES)
 ifneq ("$(wildcard build/boot.img)","")
 	@echo "**********Copy $? to image**********"
 	@mkdir -p /tmp/floppy;\
