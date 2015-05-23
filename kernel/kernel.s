@@ -7,7 +7,8 @@
 .code32
 
 .extern     cstart
-.extern     gdt_pdr
+.extern     gdt_ptr
+.extern     idt_ptr
 
 
 .bss
@@ -22,7 +23,7 @@ StackTop:
 
 _start:
     mov     $StackTop,   %esp
-    
+
     sgdtw   gdt_ptr
     call    cstart
     lgdtw   gdt_ptr

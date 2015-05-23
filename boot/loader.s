@@ -449,10 +449,6 @@ LABEL_PM_BEGIN:
     call    ShowMemInfo
     call    SetupPageMechanism
 
-    mov     $0xf,       %ah
-    mov     $'P',       %al
-    movw    %ax,        %gs:((80*20+39)*2)
-
     call    InitKernel
 
     jmp     $FlatCSelector, $KernelEntryPhyAddr

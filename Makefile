@@ -29,9 +29,13 @@ GAS_LIBS_SRC = lib/string.s lib/common.s
 C_LIBS_SRC =
 
 GAS_LIBS_OBJ = $(subst lib,build,$(GAS_LIBS_SRC:.s=.o))
-C_LIBS_OBJ = $(subst lib,build,$(C_LIBS_SRC:.s=.o))
+C_LIBS_OBJ = $(subst lib,build,$(C_LIBS_SRC:.c=.o))
 
 C_FLAGS = -std=c99 -fno-builtin -fno-stack-protector
+
+C_KERNEL_SRC = kernel/i8259a.c kernel/start.c
+GAS_KERNEL_SRC = kernel/kernel.s
+KERNEL_OBJS = $(subst kernel,build,$(GAS_KERNEL_SRC:.s=.o)) $(subst kernel,build,$(C_KERNEL_SRC:.c=.o))
 
 
 #.PHONY: subdirs $(SUBDIRS)
@@ -65,19 +69,20 @@ $(BUILD)/loader.bin: boot/loader.s
 	@$(OBJCPY) $(TRIM_FLAGS) $(BUILD)/loader.elf $@
 
 
-$(BUILD)/kernel.bin: kernel/kernel.s kernel/start.c $(GAS_LIBS_SRC) $(C_LIBS_SRC)
+$(BUILD)/kernel.bin: $(GAS_KERNEL_SRC) $(C_KERNEL_SRC) $(GAS_LIBS_SRC) $(C_LIBS_SRC)
 	@echo "**********Making kernel**********"
 # workaround
 # due to I have no idea to resolve elf64, so compile i386 for it.
 	$(foreach i, $(GAS_LIBS_SRC), $(CC) -m32 -c $(i) -o $(subst lib,build,$(i:.s=.o));)
-	$(foreach i, $(C_LIBS_SRC), $(CC) -m32 $(C_FLAGS) -c $(i) -o $(subst lib,build,$(i:.s=.o));) 
+	$(foreach i, $(C_LIBS_SRC), $(CC) -m32 $(C_FLAGS) -Iinclude/ -c $(i) -o $(subst lib,build,$(i:.c=.o));) 
 #	for i in $(GAS_LIBS_SRC); do \
 #		$(CC) -m32 -c $$i -o $(patsubst %.s,%.o, $$i) ; 
 #	done
-
-	$(CC) -m32 -c kernel/kernel.s -o $(BUILD)/kernel.o
-	$(CC) -m32 $(C_FLAGS) -Iinclude/ -c kernel/start.c -o $(BUILD)/start.o
-	$(LD) -s -Ttext 0x30400 -melf_i386 $(BUILD)/kernel.o $(BUILD)/start.o $(GAS_LIBS_OBJ) $(C_LIBS_OBJ) -o $@
+	$(foreach i, $(GAS_KERNEL_SRC), $(CC) -m32 -c $(i) -o $(subst kernel,build,$(i:.s=.o));)
+	$(foreach i, $(C_KERNEL_SRC), $(CC) -m32 $(C_FLAGS) -Iinclude/ -c $(i) -o $(subst kernel,build,$(i:.c=.o));) 
+#	$(CC) -m32 -c kernel/kernel.s -o $(BUILD)/kernel.o
+#	$(CC) -m32 $(C_FLAGS) -Iinclude/ -c kernel/start.c kernel/i8259a.c -o $(BUILD)/start.o
+	$(LD) -s -Ttext 0x30400 -melf_i386 $(KERNEL_OBJS) $(GAS_LIBS_OBJ) $(C_LIBS_OBJ) -o $@
 
 
 

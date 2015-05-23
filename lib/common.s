@@ -8,6 +8,8 @@
 
 .text
 .global     show_msg
+.global     wb_port
+.global     rb_port
 
 _position:  .4byte      0
 
@@ -19,7 +21,7 @@ show_msg:
     movl    8(%ebp),    %esi
     movl    _position,  %edi
     mov     $0xf,       %ah
-    
+
 msg_1:
     lodsb
     test    %al,        %al
@@ -49,4 +51,24 @@ msg_2:
     ret
 
 
+#void wb_port(uint16_t port, uint8_t value) ;
+wb_port:
+    mov     4(%esp),    %edx
+    mov     8(%esp),    %al
+    out     %al,        %dx
+    nop     #small dely
+    nop
+    nop
+    ret
+
+#uint8_t rb_port(uint16_t port) ;
+rb_port:
+    mov     4(%esp),    %edx
+    xor     %eax,       %eax
+    in      %dx,        %al
+    nop     #small dely
+    nop
+    nop
+    ret
+    
 
