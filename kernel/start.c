@@ -3,9 +3,9 @@
     2015/5/22
 **/
 
-#include "include/type.h"
-#include "include/pm.h"
-#include "include/string.h"
+#include "type.h"
+#include "pm.h"
+#include "string.h"
 
 void cstart()
 {
