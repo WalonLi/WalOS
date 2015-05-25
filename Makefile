@@ -18,9 +18,9 @@ TRIM_FLAGS = -R .pdr -R .comment -R.note -S -O binary
 
 
 # LD
-LDFILES_BOOT = boot/walos_x86_boot.ld
-LDFILES_DOS = boot/walos_x86_dos.ld
-
+BOOT_LD = boot/boot.ld
+LOADER_LD = boot/loader.ld
+KERNEL_LD = kernel/kernel.ld
 
 BIN_FILES = $(BUILD)/loader.bin $(BUILD)/kernel.bin
 
@@ -59,13 +59,13 @@ $(BUILD)/boot.bin: boot/boot.s
 	@rm -rf $(BUILD)
 	@mkdir $(BUILD)
 	$(CC) -Iboot/ -c $< -o $(BUILD)/boot.o
-	@$(LD) $(BUILD)/boot.o -o $(BUILD)/boot.elf -e c -T$(LDFILES_BOOT)
+	@$(LD) $(BUILD)/boot.o -o $(BUILD)/boot.elf -e c -T$(BOOT_LD)
 	@$(OBJCPY) $(TRIM_FLAGS) $(BUILD)/boot.elf $@
 
 $(BUILD)/loader.bin: boot/loader.s
 	@echo "**********Making loader**********"
 	$(CC) -Iboot/ -c $< -o $(BUILD)/loader.o
-	@$(LD) $(BUILD)/loader.o -o $(BUILD)/loader.elf -T$(LDFILES_DOS)
+	@$(LD) $(BUILD)/loader.o -o $(BUILD)/loader.elf -T$(LOADER_LD)
 	@$(OBJCPY) $(TRIM_FLAGS) $(BUILD)/loader.elf $@
 
 
@@ -82,7 +82,7 @@ $(BUILD)/kernel.bin: $(GAS_KERNEL_SRC) $(C_KERNEL_SRC) $(GAS_LIBS_SRC) $(C_LIBS_
 	$(foreach i, $(C_KERNEL_SRC), $(CC) -m32 $(C_FLAGS) -Iinclude/ -c $(i) -o $(subst kernel,build,$(i:.c=.o));) 
 #	$(CC) -m32 -c kernel/kernel.s -o $(BUILD)/kernel.o
 #	$(CC) -m32 $(C_FLAGS) -Iinclude/ -c kernel/start.c kernel/i8259a.c -o $(BUILD)/start.o
-	$(LD) -s -Ttext 0x30400 -melf_i386 $(KERNEL_OBJS) $(GAS_LIBS_OBJ) $(C_LIBS_OBJ) -o $@
+	$(LD) -s -T$(KERNEL_LD) -melf_i386 $(KERNEL_OBJS) $(GAS_LIBS_OBJ) $(C_LIBS_OBJ) -o $@
 
 
 

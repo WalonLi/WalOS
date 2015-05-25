@@ -34,11 +34,6 @@ typedef struct _GATE
     uint16_t  offset_hight ;
 } GATE ;
 
-uint8_t		gdt_ptr[6];	// 0-15:Limit  16-47:Base 
-DESCRIPTOR	gdt[GDT_SIZE];
-
-uint8_t     idt_ptr[6]; // 0-15:Limit  16-47:Base 
-GATE        idt[IDT_SIZE];
 
 /*
 u8		idt_ptr[6];	// 0-15:Limit  16-47:Base

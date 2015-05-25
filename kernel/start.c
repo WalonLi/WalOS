@@ -8,9 +8,18 @@
 #include "string.h"
 #include "common.h"
 
+uint8_t     gdt_ptr[6]; // 0-15:Limit  16-47:Base 
+DESCRIPTOR  gdt[GDT_SIZE];
+
+uint8_t     idt_ptr[6]; // 0-15:Limit  16-47:Base 
+GATE        idt[IDT_SIZE];
+
+uint32_t    position ;
+
 void cstart()
 {
     // adjust position
+    position = 0 ;
     for (int x = 0 ; x < 13 ; ++x) show_msg("\n") ;
 
     show_msg("C code start...\n") ;

@@ -6,12 +6,13 @@
 
 .code32
 
+.extern     position
+
 .text
 .global     show_msg
 .global     wb_port
 .global     rb_port
 
-_position:  .4byte      0
 
 # void show_msg( char *msg )
 show_msg:
@@ -19,9 +20,8 @@ show_msg:
     mov     %esp,       %ebp
 
     movl    8(%ebp),    %esi
-    movl    _position,  %edi
+    movl    position,  %edi
     mov     $0xf,       %ah
-
 msg_1:
     lodsb
     test    %al,        %al
@@ -45,8 +45,7 @@ msg_3:
     jmp     msg_1
 
 msg_2:
-    movl    %edi,       _position
-
+    movl    %edi,       position
     pop     %ebp
     ret
 
