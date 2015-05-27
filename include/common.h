@@ -8,14 +8,12 @@
 
 #include "type.h"
 
-void wb_port(uint16_t port, uint8_t value) ;
-void ww_port(uint16_t port, uint16_t value) ;
-void wd_port(uint16_t port, uint32_t value) ;
-
-uint8_t rb_port(uint16_t port) ;
-uint16_t rw_port(uint16_t port) ;
-uint32_t rd_port(uint16_t port) ;
-
+// walos lib
 void show_msg(char *msg) ;
+
+// standard lib
+int atoi(const char *s) ;
+char *itoa(int value, char *dest) ;
+
 
 #endif

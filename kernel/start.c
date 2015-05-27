@@ -15,17 +15,21 @@ DESCRIPTOR  gdt[GDT_SIZE];
 uint8_t     idt_ptr[6]; // 0-15:Limit  16-47:Base 
 GATE        idt[IDT_SIZE];
 
-uint32_t    position = 1;
+uint32_t    position = 0;
 
 void cstart()
 {
     // adjust position
     // position = 0 ;
+    // char s [100] ={ 0 } ;
+    // int a = 5 ;
     for (int x = 0 ; x < 13 ; ++x) show_msg("\n") ;
 
     show_msg("C code start...\n") ;
 
     show_msg("Prepare GDT\n") ;
+
+    // show_msg(itoa(a, s)) ;
 
     // Copy Loader's GDT to new GDT
     memcpy(&gdt,                                // new GDT

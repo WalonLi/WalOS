@@ -39,5 +39,25 @@ int memcmp(const void *s1, const void *s2, uint32_t cnt)
     return 0 ;
 }
 
+int strlen(const char *src)
+{
+    int len = 0 ;
+    while (*src++) len++ ;
 
+    return len ;
+}
 
+char *strcpy(char *dest, const char *src)
+{
+    return memcpy(dest, src, strlen(src)) ;
+}
+
+int strcmp(const char *s1, const char *s2)
+{
+    while (*s1 && *s1 == *s2)
+    {
+        s1++ ;
+        s2++ ;
+    }
+    return (int)(*s1 - *s2) ;
+}
