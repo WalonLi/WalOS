@@ -25,8 +25,8 @@ KERNEL_LD = kernel/kernel.ld
 BIN_FILES = $(BUILD)/loader.bin $(BUILD)/kernel.bin
 
 
-GAS_LIBS_SRC = lib/string.s lib/common.s
-C_LIBS_SRC =
+GAS_LIBS_SRC = 
+C_LIBS_SRC = lib/string.c lib/common.c
 
 GAS_LIBS_OBJ = $(subst lib,build,$(GAS_LIBS_SRC:.s=.o))
 C_LIBS_OBJ = $(subst lib,build,$(C_LIBS_SRC:.c=.o))
