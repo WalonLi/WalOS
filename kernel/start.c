@@ -15,7 +15,7 @@ DESCRIPTOR  gdt[GDT_SIZE];
 uint8_t     idt_ptr[6]; // 0-15:Limit  16-47:Base 
 GATE        idt[IDT_SIZE];
 
-uint32_t    position = 0;
+uint32_t    position = 1;
 
 void cstart()
 {
@@ -26,14 +26,17 @@ void cstart()
     show_msg("C code start...\n") ;
 
     show_msg("Prepare GDT\n") ;
+
     // Copy Loader's GDT to new GDT
     memcpy(&gdt,                                // new GDT
            (void*)(*(uint32_t*)(&gdt_ptr[2])),    // base of old GDT
            *((uint16_t*)(&gdt_ptr[0])) + 1 ) ;    // limit of old GDT
     
+
     uint16_t *gdt_limit = (uint16_t*)(&gdt_ptr[0]) ;
     uint32_t *gdt_base = (uint32_t*)(&gdt_ptr[2]) ;
     
+
     // set new limit(GDT 128)
     *gdt_limit = GDT_SIZE * sizeof(DESCRIPTOR) - 1 ;
     // set new base
@@ -45,4 +48,5 @@ void cstart()
     uint32_t *idt_base = (uint32_t*)(&idt_ptr[2]) ;
     *idt_limit = IDT_SIZE * sizeof(GATE) - 1 ;
     *idt_base = (uint32_t)&idt ;  
+
 }

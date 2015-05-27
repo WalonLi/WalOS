@@ -31,7 +31,7 @@ C_LIBS_SRC = lib/string.c lib/common.c
 GAS_LIBS_OBJ = $(subst lib,build,$(GAS_LIBS_SRC:.s=.o))
 C_LIBS_OBJ = $(subst lib,build,$(C_LIBS_SRC:.c=.o))
 
-C_FLAGS = -std=c99 -fno-builtin -fno-stack-protector -fno-zero-initialized-in-bss
+C_FLAGS = -std=c99 -fno-builtin -fno-stack-protector -fno-zero-initialized-in-bss -Wall
 
 C_KERNEL_SRC = kernel/i8259a.c kernel/start.c
 GAS_KERNEL_SRC = kernel/kernel.s

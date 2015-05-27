@@ -9,17 +9,17 @@
 #define BUILDIO(bwl, bw, type)                                          \
 static inline void out##bwl(unsigned type value, int port)              \
 {                                                                       \
-    asm volatile("out" #bwl " %" #bw "0, %w1"                           \
+    __asm__ volatile("out" #bwl " %" #bw "0, %w1"                       \
                  : : "a"(value), "Nd"(port));                           \
-    asm volatile("nop ; nop ; nop ;") ;                                 \
+    __asm__ volatile("nop ; nop ; nop ;") ;                             \
 }                                                                       \
                                                                         \
 static inline unsigned type in##bwl(int port)                           \
 {                                                                       \
     unsigned type value;                                                \
-    asm volatile("in" #bwl " %w1, %" #bw ""                             \
+    __asm__ volatile("in" #bwl " %w1, %" #bw ""                         \
                  : "=a"(value) : "Nd"(port));                           \
-    asm volatile("nop ; nop ; nop ;") ;                                 \
+    __asm__ volatile("nop ; nop ; nop ;") ;                             \
     return value;                                                       \
 }
 
