@@ -58,9 +58,16 @@ _start:
     call    cstart
     lgdtw   gdt_ptr
 
-    lidt    idt_ptr
+    lidtw   idt_ptr
     
-    jmp     .
+    # jump to csinit to check GDT is work fine.
+    # 0x8 is SELECTOR_KERNEL_CS
+    ljmp    $0x8, $csinit
+csinit:
+    sti
+    ud2 # for test hardware excpetion
+    hlt
+     
 
 # if push 0xffffffff at first, means no error code.
 _division_by_error:
@@ -139,7 +146,7 @@ _simd_floating_point_exception:
     jmp     _exception  
 
 _exception:
-    call    hw_exceptions_handler
+    call    hw_exception_handler
     add     $8,     %esp
     hlt
     

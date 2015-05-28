@@ -18,15 +18,15 @@
 #                         #
 ###########################
 #   GDT                         BASE            LIMIT               ATTR
-LABEL_GDT:      Descriptor      0,              0,                  0           
+LABEL_GDT:      Descriptor      0,              0,                  0          
+LABEL_FLAT_C_DESC:  Descriptor  0,              0xfffff,            (DA_CR + DA_32 + DA_LIMIT_4K)
+LABEL_FLAT_RW_DESC: Descriptor  0,              0xfffff,            (DA_DRW + DA_32 + DA_LIMIT_4K) 
 LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             (DA_DRW+DA_DPL3)
-
 
 # don't initial in code 16
 #LABEL_PAGE_DIR_DESC: Descriptor PageDirBase,    4095,               DA_DRW
 #LABEL_PAGE_TBL_DESC: Descriptor PageTblBase,    (4096*8-1),         DA_DRW      #DA_LIMIT_4K
-LABEL_FLAT_C_DESC:  Descriptor  0,              0xfffff,            (DA_CR + DA_32 + DA_LIMIT_4K)
-LABEL_FLAT_RW_DESC: Descriptor  0,              0xfffff,            (DA_DRW + DA_32 + DA_LIMIT_4K)
+
 
 .set        GdtLen,     . - LABEL_GDT
 GdtPtr:     .2byte      GdtLen - 1

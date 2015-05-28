@@ -84,23 +84,23 @@ void hw_exception_handler(int vector, int err_code, int eip, int cs, int eflags)
                        "##_machine_check",
                        "##_simd_floating_point_exception"} ;
     position = 0 ;
-    show_msg("Exception : ", 0x74) ;
-    show_msg(err_msg[vector], 0x74) ;
+    show_msg_ext("Exception : ", 0x74) ;
+    show_msg_ext(err_msg[vector], 0x74) ;
     show_msg("\n") ;
     
     char buffer[80] = { 0 };
     
-    show_msg("eflags:", 0x74) ;
-    show_msg(itoa(eflags, buffer, 16)) ;
+    show_msg_ext("eflags:", 0x74) ;
+    show_msg(itoa_base(eflags, buffer, 16)) ;
     
-    show_msg(" cs:", 0x74) ;
-    show_msg(itoa(cs, buffer, 16)) ;
+    show_msg_ext(" cs:", 0x74) ;
+    show_msg(itoa_base(cs, buffer, 16)) ;
     
-    show_msg(" eip:", 0x74) ;
-    show_msg(itoa(eip, buffer, 16)) ;
+    show_msg_ext(" eip:", 0x74) ;
+    show_msg(itoa_base(eip, buffer, 16)) ;
     
-    show_msg(" err_code:", 0x74) ;
-    show_msg(itoa(err_code, buffer, 16)) ;        
+    show_msg_ext(" err_code:", 0x74) ;
+    show_msg(itoa_base(err_code, buffer, 16)) ;        
     
 }
 
@@ -108,11 +108,7 @@ void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler
 {
     // GATE *gate_ptr = &idt[vector] ;
     uint32_t base = (uint32_t)handler ;
-        uint16_t  offset_low ;
-    uint16_t  selector ;
-    uint8_t   d_count ;
-    uint8_t   attr ; //P:1 DPL:2 DT:1 TYPE:4
-    uint16_t  offset_hight ;
+
     idt[vector].offset_low = base & 0xffff ;
     idt[vector].selector = SELECTOR_KERNEL_CS ;
     idt[vector].d_count = 0 ;
@@ -123,7 +119,28 @@ void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler
 void init_idt_descs()
 {
     // initial all interrupt gate
-    // init_idt_desc() ;
+    init_idt_desc(HW_INT_VECTOR_DIVISION_BY_ERROR, DA_386IGate, _division_by_error, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_DEBUGGER, DA_386IGate, _debugger, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_NMI, DA_386IGate, _nmi, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_BREAKPOINT, DA_386IGate, _breakpoint, PRI_USER) ;
+    init_idt_desc(HW_INT_VECTOR_OVERFLOW, DA_386IGate, _overflow, PRI_USER) ;
+    init_idt_desc(HW_INT_VECTOR_BOUNDS, DA_386IGate, _bounds, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_INVALILD_OPCODE, DA_386IGate, _invalid_opcode, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_COPR_NOT_AVAIL, DA_386IGate, _coprocessor_not_available, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_DOUBLE_FAULT, DA_386IGate, _double_foult, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_COPR_SEG_OVERRUN, DA_386IGate, _coprocessor_segment_overrun, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_INVALID_TSS, DA_386IGate, _invalid_task_state_segment, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_SEG_NOT_PRESENT, DA_386IGate, _segment_not_present, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_STACK_FAULT, DA_386IGate, _stack_fault, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_GERNERAL_PROTECT_FAULT, DA_386IGate, _general_protected_fault, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_PAGE_FAULT, DA_386IGate, _page_fault, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_RESERVED, DA_386IGate, _reserved, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_MATH_FAULT, DA_386IGate, _math_fault, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_ALIGN_CHECK, DA_386IGate, _alignment_check, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_MACHINE_CHECK, DA_386IGate, _machine_check, PRI_KRNL) ;
+    init_idt_desc(HW_INT_VECTOR_SIMD_FLOAT_POINT_EXECPT, DA_386IGate, _simd_floating_point_exception, PRI_KRNL) ;
+
+
 }
 
 

@@ -11,10 +11,10 @@ extern uint32_t position ;
 
 void show_msg(char *msg)
 {
-    show_msg(msg, 0) ;
+    show_msg_ext(msg, 0) ;
 }
 
-void show_msg(char *msg, uint16_t color)
+void show_msg_ext(char *msg, uint16_t color)
 {
     for ( char *c = msg ; *c != '\0' ; ++c )
     {
@@ -66,10 +66,10 @@ void reverse(char *s)
 
 char *itoa(int value, char *dest)
 {
-    return itoa(value, dest, 10) ;
+    return itoa_base(value, dest, 10) ;
 }
 
-char *itoa(int value, char *dest, int radix)
+char *itoa_base(int value, char *dest, int radix)
 {
     bool positive = true ;
 
