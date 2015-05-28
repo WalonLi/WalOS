@@ -55,6 +55,7 @@ void cstart()
     
     init_8259A() ;
     init_idt_descs() ;
+    init_8259_irq() ;
     
     show_msg("C code end...\n") ;
 
@@ -91,17 +92,25 @@ void hw_exception_handler(int vector, int err_code, int eip, int cs, int eflags)
     char buffer[80] = { 0 };
     
     show_msg_ext("eflags:", 0x74) ;
-    show_msg(itoa_base(eflags, buffer, 16)) ;
+    show_msg_ext(itoa_base(eflags, buffer, 16), 0x74) ;
     
     show_msg_ext(" cs:", 0x74) ;
-    show_msg(itoa_base(cs, buffer, 16)) ;
+    show_msg_ext(itoa_base(cs, buffer, 16), 0x74) ;
     
     show_msg_ext(" eip:", 0x74) ;
-    show_msg(itoa_base(eip, buffer, 16)) ;
+    show_msg_ext(itoa_base(eip, buffer, 16), 0x74) ;
     
     show_msg_ext(" err_code:", 0x74) ;
-    show_msg(itoa_base(err_code, buffer, 16)) ;        
+    show_msg_ext(itoa_base(err_code, buffer, 16), 0x74) ;        
     
+}
+
+void hw_irq_handler(int irq)
+{
+    char str[80] = {0} ;
+    show_msg_ext("irq:", 0x74) ;
+    show_msg_ext(itoa_base(irq, str, 16), 0x74) ;
+    show_msg("\n") ;
 }
 
 void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler, unsigned char privilege)
@@ -139,7 +148,6 @@ void init_idt_descs()
     init_idt_desc(HW_INT_VECTOR_ALIGN_CHECK, DA_386IGate, _alignment_check, PRI_KRNL) ;
     init_idt_desc(HW_INT_VECTOR_MACHINE_CHECK, DA_386IGate, _machine_check, PRI_KRNL) ;
     init_idt_desc(HW_INT_VECTOR_SIMD_FLOAT_POINT_EXECPT, DA_386IGate, _simd_floating_point_exception, PRI_KRNL) ;
-
 
 }
 

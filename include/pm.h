@@ -108,9 +108,10 @@ typedef struct _GATE
 
 void init_8259A() ;
 void hw_exception_handler(int vector, int err_code, int eip, int cs, int eflags) ;
+void hw_irq_handler(int irq) ;
 void init_idt_descs() ;
+void init_8259_irq() ;
 void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler, unsigned char privilege) ;
-
 
 void     _division_by_error();
 void     _debugger();
@@ -133,5 +134,24 @@ void     _alignment_check();
 void     _machine_check();
 void     _simd_floating_point_exception();
 
+// master 8259 controller
+void    _hw_int00() ; // clock
+void    _hw_int01() ; // keyboard
+void    _hw_int02() ; // cascade to slaver
+void    _hw_int03() ; // second serial
+void    _hw_int04() ; // first serial
+void    _hw_int05() ; // XT winchester
+void    _hw_int06() ; // floppy
+void    _hw_int07() ; // printer
+
+// slaver 8259 controller
+void    _hw_int08() ; // realtime clock
+void    _hw_int09() ; // connect to master
+void    _hw_int10() ;
+void    _hw_int11() ;
+void    _hw_int12() ;
+void    _hw_int13() ; // FPU
+void    _hw_int14() ; // AT winchester
+void    _hw_int15() ;
 
 #endif
