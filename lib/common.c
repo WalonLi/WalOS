@@ -11,13 +11,18 @@ extern uint32_t position ;
 
 void show_msg(char *msg)
 {
+    show_msg(msg, 0) ;
+}
+
+void show_msg(char *msg, uint16_t color)
+{
     for ( char *c = msg ; *c != '\0' ; ++c )
     {
         if (*c == '\n')
             position = ((position / 160) + 1) * 160 ;
         else
         {
-            uint16_t value = 0xf00 | *c ;
+            uint16_t value = (color) ? ((color<<8) | *c) : (0xf00 | *c) ;
             __asm__ volatile("movw %0, %%gs:(%%edi)": : "a"(value), "D"(position));
             position += 2 ;
         }
@@ -61,6 +66,11 @@ void reverse(char *s)
 
 char *itoa(int value, char *dest)
 {
+    return itoa(value, dest, 10) ;
+}
+
+char *itoa(int value, char *dest, int radix)
+{
     bool positive = true ;
 
     if (value < 0)
@@ -72,8 +82,10 @@ char *itoa(int value, char *dest)
     int i = 0 ;
     while (value)
     {
-        dest[i++] = value % 10 + '0' ;
-        value /= 10 ;
+        int c = value % radix ;
+        value /= radix ;
+        
+        dest[i++] = (c < 10) ? (c+'0') : (c + 'a' - 10) ;
     }
 
     if (!positive) dest[i++] = '-' ;

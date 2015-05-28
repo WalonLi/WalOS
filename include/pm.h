@@ -9,11 +9,10 @@
 #include "type.h"
 
 #define GDT_SIZE    128
-#define	IDT_SIZE	256
+#define    IDT_SIZE    256
 
 
-void init_8259A() ;
-
+typedef void (*interrupt_handler)() ;
 
 typedef struct _DESCRIPTOR
 {
@@ -34,11 +33,77 @@ typedef struct _GATE
     uint16_t  offset_hight ;
 } GATE ;
 
+// GDT
+// Descriptor index(define in loader)
+#define INDEX_DUMMY     0
+#define INDEX_FLAT_C    1
+#define INDEX_FLAT_RW   2
+#define INDEX_VIDEO     3
 
-/*
-u8		idt_ptr[6];	// 0-15:Limit  16-47:Base
-GATE		idt[IDT_SIZE];
-*/
+// Selector offset
+#define SELECTOR_DUMMY      0
+#define SELECTOR_FLAT_C     0x08
+#define SELECTOR_FLAT_RW    0x10
+#define SELECTOR_VIDEO      (0x18+3) // +RPL3
+
+#define SELECTOR_KERNEL_CS  SELECTOR_FLAT_C
+#define SELECTOR_KERNEL_DS  SELECTOR_FLAT_RW
+
+
+// 32 bit
+#define    DA_32,      0x4000
+#define    DA_LIMIT_4K, 0x8000
+
+// DPL(Discriptor Privilege Level)
+#define    DA_DPL0,    0x0
+#define    DA_DPL1,    0x20
+#define    DA_DPL2,    0x40
+#define    DA_DPL3,    0x60
+
+// Segment type
+#define    DA_DR,      0x90
+#define    DA_DRW,     0x92
+#define    DA_DRWA,    0x93
+#define    DA_C,       0x98
+#define    DA_CR,      0x9a
+#define    DA_CCO,     0x9c
+#define    DA_CCOR,    0x9e
+
+#define    DA_LDT,     0x82
+#define    DA_TaskGate, 0x85
+#define    DA_386TSS,  0x89
+#define    DA_386CGate, 0x8c
+#define    DA_386IGate, 0x8e
+#define    DA_386TGate, 0x8f
+
+
+// HW interrupt vector table
+#define HW_INT_VECTOR_DIVISION_BY_ERROR         0x0
+#define HW_INT_VECTOR_DEBUGGER                  0x1
+#define HW_INT_VECTOR_NMI                       0x2
+#define HW_INT_VECTOR_BREAKPOINT                0x3
+#define HW_INT_VECTOR_OVERFLOW                  0x4
+#define HW_INT_VECTOR_BOUNDS                    0x5
+#define HW_INT_VECTOR_INVALILD_OPCODE           0x6
+#define HW_INT_VECTOR_COPR_NOT_AVAIL            0x7
+#define HW_INT_VECTOR_DOUBLE_FAULT              0x8
+#define HW_INT_VECTOR_COPR_SEG_OVERRUN          0x9
+#define HW_INT_VECTOR_INVALID_TSS               0xA
+#define HW_INT_VECTOR_SEG_NOT_PRESENT           0xB
+#define HW_INT_VECTOR_STACK_FAULT               0xC
+#define HW_INT_VECTOR_GERNERAL_PROTECT_FAULT    0xD
+#define HW_INT_VECTOR_PAGE_FAULT                0xE
+#define HW_INT_VECTOR_RESERVED                  0xF
+#define HW_INT_VECTOR_MATH_FAULT                0x10
+#define HW_INT_VECTOR_ALIGN_CHECK               0x11
+#define HW_INT_VECTOR_MACHINE_CHECK             0x12
+#define HW_INT_VECTOR_SIMD_FLOAT_POINT_EXECPT   0x13
+
+void init_8259A() ;
+void hw_exception_handler(int vector, int err_code, int eip, int cs, int eflags) ;
+void init_idt_descs() ;
+void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler, unsigned char privilege) ;
+
 
 
 #endif
