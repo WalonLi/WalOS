@@ -6,6 +6,7 @@
 #include "type.h"
 #include "common.h"
 #include "string.h"
+#include "pm.h"
 
 extern uint32_t position ;
 
@@ -96,3 +97,11 @@ char *itoa_base(int value, char *dest, int radix)
     return dest ;
 }
 
+
+
+void delay(int time)
+{
+    for (int i = 0 ; i  < time ; i++)
+      for (volatile int j = 0 ; j < 10000 ; j++ ) 
+        ;
+}

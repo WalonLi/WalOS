@@ -17,5 +17,5 @@ int atoi(const char *s) ;
 char *itoa(int value, char *dest) ;
 char *itoa_base(int value, char *dest, int radix) ;
 
-
+void delay(int time) ;
 #endif

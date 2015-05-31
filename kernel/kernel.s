@@ -11,7 +11,7 @@
 .extern     cstart
 .extern     hw_exception_handler
 .extern     hw_irq_handler
-.extern     kernel_main
+.extern     pm_kernel_main
 
 # extern parameter
 .extern     gdt_ptr
@@ -80,22 +80,23 @@ _start:
 
     sgdtw   gdt_ptr
     call    cstart
-    lgdtw   gdt_ptr
 
+    # load gdt, idt, tss
+    lgdtw   gdt_ptr
     lidtw   idt_ptr
+
+    xor     %eax,       %eax
+    mov     $SELECTOR_TSS, %ax
+    ltr     %ax
+
     
     # jump to csinit to check GDT is work fine.
     # 0x8 is SELECTOR_KERNEL_CS
     ljmp    $0x8, $csinit
 csinit:
 
-
-    xor     %eax,       %eax
-    mov     $SELECTOR_TSS, %ax
-    ltr     %ax
-
     #sti
-    jmp     kernel_main
+    jmp     pm_kernel_main
     # for test hardware excpetion
     #ljmp    $0x40, $0
     #ud2 

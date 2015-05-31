@@ -70,10 +70,23 @@ void cstart()
 
     init_tss() ;
 
+    // for easily use, init ldt in gdt
+    init_gdt_desc(&gdt[INDEX_LDT_FIRST], 
+                  vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[0].ldt), 
+                  LDT_SIZE * sizeof(DESCRIPTOR)- 1, 
+                  DA_LDT) ;
     show_msg("C code end...\n") ;
 
 }
 
+// segment to physical address
+uint32_t seg2phys(uint16_t seg)
+{
+    DESCRIPTOR* dest = &gdt[seg >> 3];
+    return (dest->base_high<<24 | dest->base_mid<<16 | dest->base_low);
+}
+
+// hw exception and handler initial function
 void hw_exception_handler(int vector, int err_code, int eip, int cs, int eflags)
 {
     // uint16_t color = 0x74 ;
@@ -126,6 +139,9 @@ void hw_irq_handler(int irq)
     show_msg("\n") ;
 }
 
+
+
+// all descriptor initial 
 void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler, unsigned char privilege)
 {
     // GATE *gate_ptr = &idt[vector] ;
@@ -144,7 +160,7 @@ void init_gdt_desc(DESCRIPTOR *desc, uint32_t base, uint32_t limit, uint16_t att
     desc->base_low    = base & 0x0FFFF;
     desc->base_mid    = (base >> 16) & 0x0FF;
     desc->attr1       = attr & 0xFF;                                                               
-    desc->limit_high_attr2= ((limit>>16) & 0x0F) | (attr>>8) & 0xF0;
+    desc->limit_high_attr2= (((limit>>16) & 0x0F) | (attr>>8)) & 0xF0;
     desc->base_high   = (base >> 24) & 0x0FF;  
 }
 
@@ -174,45 +190,17 @@ void init_idt_descs()
 
 }
 
-uint32_t seg2phys(uint16_t seg)
-{
-    DESCRIPTOR* dest = &gdt[seg >> 3];
-    return (dest->base_high<<24 | dest->base_mid<<16 | dest->base_low);
-}
-
 void init_tss()
 {
     memset(&tss, 0, sizeof(tss)) ;
     tss.ss0 = SELECTOR_KERNEL_DS ;
     init_gdt_desc(&gdt[INDEX_TSS], vir2phys(seg2phys(SELECTOR_KERNEL_DS), &tss), sizeof(tss) - 1, DA_386TSS) ;
     tss.iobase = sizeof(tss) ;
-
-    // for easily use, init ldt in gdt
-    init_gdt_desc(&gdt[INDEX_LDT_FIRST], vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[0].ldt), LDT_SIZE * sizeof(DESCRIPTOR)- 1, DA_LDT) ;
 }
 
 
-void delay(int time)
-{
-    for (int i = 0 ; i  < time ; i++)
-      for (volatile int j = 0 ; j < 20000 ; j++ ) 
-        ;
-}
-
-void process_A()
-{
-    char buf[10] = { 0 };
-    int i = 0 ;
-    while (true)
-    {
-        show_msg("A") ;
-        show_msg(itoa(i++, buf)) ;
-        show_msg(".") ;
-        delay(10) ;
-    }
-}
-
-void kernel_main()
+extern void process_A() ;
+void pm_kernel_main()
 {
     show_msg("kernel main start...\n") ;
     PROCESS *proc = proc_table ;
