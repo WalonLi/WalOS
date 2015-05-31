@@ -7,8 +7,9 @@
 #include "pm.h"
 #include "string.h"
 #include "common.h"
+#include "process.h"
 
-
+// global
 uint8_t     gdt_ptr[6]; // 0-15:Limit  16-47:Base 
 DESCRIPTOR  gdt[GDT_SIZE];
 
@@ -16,6 +17,15 @@ uint8_t     idt_ptr[6]; // 0-15:Limit  16-47:Base
 GATE        idt[IDT_SIZE];
 
 uint32_t    position = 0;
+
+TSS         tss ;
+PROCESS     *process_ready ;
+
+PROCESS     proc_table[NR_TASKS] ;
+char        task_stack[STACK_SIZE] ;
+
+
+
 
 void cstart()
 {
@@ -57,6 +67,9 @@ void cstart()
     init_idt_descs() ;
     init_8259_irq() ;
     
+
+    init_tss() ;
+
     show_msg("C code end...\n") ;
 
 }
@@ -122,7 +135,17 @@ void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler
     idt[vector].selector = SELECTOR_KERNEL_CS ;
     idt[vector].d_count = 0 ;
     idt[vector].attr = type | (privilege<<5) ;
-    idt[vector].offset_hight = (base>>16) & 0xffff ;
+    idt[vector].offset_high = (base>>16) & 0xffff ;
+}
+
+void init_gdt_desc(DESCRIPTOR *desc, uint32_t base, uint32_t limit, uint16_t attr)
+{
+    desc->limit_low   = limit & 0x0FFFF;
+    desc->base_low    = base & 0x0FFFF;
+    desc->base_mid    = (base >> 16) & 0x0FF;
+    desc->attr1       = attr & 0xFF;                                                               
+    desc->limit_high_attr2= ((limit>>16) & 0x0F) | (attr>>8) & 0xF0;
+    desc->base_high   = (base >> 24) & 0x0FF;  
 }
 
 void init_idt_descs()
@@ -151,11 +174,71 @@ void init_idt_descs()
 
 }
 
+uint32_t seg2phys(uint16_t seg)
+{
+    DESCRIPTOR* dest = &gdt[seg >> 3];
+    return (dest->base_high<<24 | dest->base_mid<<16 | dest->base_low);
+}
+
+void init_tss()
+{
+    memset(&tss, 0, sizeof(tss)) ;
+    tss.ss0 = SELECTOR_KERNEL_DS ;
+    init_gdt_desc(&gdt[INDEX_TSS], vir2phys(seg2phys(SELECTOR_KERNEL_DS), &tss), sizeof(tss) - 1, DA_386TSS) ;
+    tss.iobase = sizeof(tss) ;
+
+    // for easily use, init ldt in gdt
+    init_gdt_desc(&gdt[INDEX_LDT_FIRST], vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[0].ldt), LDT_SIZE * sizeof(DESCRIPTOR)- 1, DA_LDT) ;
+}
 
 
+void delay(int time)
+{
+    for (int i = 0 ; i  < time ; i++)
+      for (volatile int j = 0 ; j < 20000 ; j++ ) 
+        ;
+}
 
+void process_A()
+{
+    char buf[10] = { 0 };
+    int i = 0 ;
+    while (true)
+    {
+        show_msg("A") ;
+        show_msg(itoa(i++, buf)) ;
+        show_msg(".") ;
+        delay(10) ;
+    }
+}
 
+void kernel_main()
+{
+    show_msg("kernel main start...\n") ;
+    PROCESS *proc = proc_table ;
 
+    proc->ldt_sel = SELECTOR_LDT_FIRST ;
+    memcpy(&proc->ldt[0], &gdt[SELECTOR_KERNEL_CS>>3], sizeof(DESCRIPTOR)) ;
+    proc->ldt[0].attr1 = DA_C | PRI_TASK << 5 ;
+    memcpy(&proc->ldt[1], &gdt[SELECTOR_KERNEL_CS>>3], sizeof(DESCRIPTOR)) ;
+    proc->ldt[1].attr1 = DA_DRW | PRI_TASK << 5 ;
+
+    
+    proc->regs.cs = (0 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
+    proc->regs.ds = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
+    proc->regs.es = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
+    proc->regs.fs = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
+    proc->regs.ss = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
+
+    proc->regs.gs = (SELECTOR_KERNEL_GS & SA_RPL_MASK) | RPL_TASK ;
+    proc->regs.eip = (uint32_t)process_A ;
+    proc->regs.esp = (uint32_t)task_stack + STACK_SIZE ;
+    proc->regs.eflags = 0x1202 ; // IF=1, IOPL=1
+
+    process_ready = proc_table ;
+    _restart_process() ;
+    while(1) ;
+}
 
 
 

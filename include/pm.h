@@ -10,6 +10,7 @@
 
 #define GDT_SIZE    128
 #define IDT_SIZE    256
+#define LDT_SIZE    2
 
 
 typedef void (*interrupt_handler)() ;
@@ -20,8 +21,8 @@ typedef struct _DESCRIPTOR
     uint16_t  base_low ;
     uint8_t   base_mid ;
     uint8_t   attr1 ; //P:1 DPL:2 DT:1 TYPE:4
-    uint8_t   limit_hight_attr2 ; // G:1 D:1 L:1 AVL:1 SegLimitHight:4
-    uint8_t   base_hight ;
+    uint8_t   limit_high_attr2 ; // G:1 D:1 L:1 AVL:1 SegLimitHight:4
+    uint8_t   base_high ;
 } DESCRIPTOR ;
 
 typedef struct _GATE
@@ -30,8 +31,40 @@ typedef struct _GATE
     uint16_t  selector ;
     uint8_t   d_count ;
     uint8_t   attr ; //P:1 DPL:2 DT:1 TYPE:4
-    uint16_t  offset_hight ;
+    uint16_t  offset_high ;
 } GATE ;
+
+typedef struct _TSS
+{
+    uint32_t    back ;
+    uint32_t    esp0 ;
+    uint32_t    ss0 ;
+    uint32_t    esp1 ;
+    uint32_t    ss1 ;
+    uint32_t    esp2 ;
+    uint32_t    ss2 ;
+    uint32_t    cr3 ;
+    uint32_t    eip ;
+    uint32_t    flags ;
+    uint32_t    eax ;
+    uint32_t    ecx ;
+    uint32_t    edx ;
+    uint32_t    ebx ;
+    uint32_t    esp ;
+    uint32_t    ebp ;
+    uint32_t    esi ;
+    uint32_t    edi ;
+    uint32_t    es ;
+    uint32_t    cs ;
+    uint32_t    ss ;
+    uint32_t    ds ;
+    uint32_t    fs ;
+    uint32_t    gs ;
+    uint32_t    ldt ;
+    uint32_t    trap ;
+    uint32_t    iobase ;
+} TSS ;
+
 
 
 // Privilege
@@ -46,15 +79,20 @@ typedef struct _GATE
 #define INDEX_FLAT_C    1
 #define INDEX_FLAT_RW   2
 #define INDEX_VIDEO     3
+#define INDEX_TSS       4
+#define INDEX_LDT_FIRST 5
 
 // Selector offset
 #define SELECTOR_DUMMY      0
 #define SELECTOR_FLAT_C     0x08
 #define SELECTOR_FLAT_RW    0x10
 #define SELECTOR_VIDEO      (0x18+3) // +RPL3
+#define SELECTOR_TSS        0x20
+#define SELECTOR_LDT_FIRST  0x28
 
 #define SELECTOR_KERNEL_CS  SELECTOR_FLAT_C
 #define SELECTOR_KERNEL_DS  SELECTOR_FLAT_RW
+#define SELECTOR_KERNEL_GS  SELECTOR_VIDEO
 
 
 // 32 bit
@@ -83,6 +121,19 @@ typedef struct _GATE
 #define    DA_386IGate 0x8e
 #define    DA_386TGate 0x8f
 
+#define     SA_RPL_MASK     0xfffc
+#define     SA_RPL0         0
+#define     SA_RPL1         1
+#define     SA_RPL2         2
+#define     SA_RPL3         3
+#define     SA_TI_MASK      0xfffb
+#define     SA_TIG          0
+#define     SA_TIL          4
+
+#define     RPL_KRNL    SA_RPL0
+#define     RPL_TASK    SA_RPL1
+#define     RPL_USER    SA_RPL3
+
 
 // HW interrupt vector table
 #define HW_INT_VECTOR_DIVISION_BY_ERROR         0x0
@@ -106,12 +157,18 @@ typedef struct _GATE
 #define HW_INT_VECTOR_MACHINE_CHECK             0x12
 #define HW_INT_VECTOR_SIMD_FLOAT_POINT_EXECPT   0x13
 
+#define vir2phys(seg_base, vir) (uint32_t)(((uint32_t)seg_base) + (uint32_t)(vir))
+
 void init_8259A() ;
 void hw_exception_handler(int vector, int err_code, int eip, int cs, int eflags) ;
 void hw_irq_handler(int irq) ;
 void init_idt_descs() ;
 void init_8259_irq() ;
+void init_tss() ;
 void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler, unsigned char privilege) ;
+
+void init_gdt_desc(DESCRIPTOR *desc, uint32_t base, uint32_t limit, uint16_t attr) ;
+#define init_ldt_desc init_gdt_desc
 
 void     _division_by_error();
 void     _debugger();
@@ -153,5 +210,8 @@ void    _hw_int12() ;
 void    _hw_int13() ; // FPU
 void    _hw_int14() ; // AT winchester
 void    _hw_int15() ;
+
+
+void    _restart_process() ;
 
 #endif

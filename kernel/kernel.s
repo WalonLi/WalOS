@@ -3,6 +3,7 @@
 #   2015/5/16
 #
 
+.include "tss.s"
 
 .code32
 
@@ -10,10 +11,15 @@
 .extern     cstart
 .extern     hw_exception_handler
 .extern     hw_irq_handler
+.extern     kernel_main
 
 # extern parameter
 .extern     gdt_ptr
 .extern     idt_ptr
+
+.extern     process_ready
+
+.extern     tss
 
 
 .bss
@@ -67,6 +73,8 @@ StackTop:
 .global     _hw_int14
 .global     _hw_int15
 
+.global     _restart_process
+
 _start:
     mov     $StackTop,   %esp
 
@@ -80,8 +88,14 @@ _start:
     # 0x8 is SELECTOR_KERNEL_CS
     ljmp    $0x8, $csinit
 csinit:
-    sti
 
+
+    xor     %eax,       %eax
+    mov     $SELECTOR_TSS, %ax
+    ltr     %ax
+
+    #sti
+    jmp     kernel_main
     # for test hardware excpetion
     #ljmp    $0x40, $0
     #ud2 
@@ -189,7 +203,8 @@ _exception:
 
 .align 16
 _hw_int00:
-    master_8259     0
+    #master_8259     0
+    iretl
 
 _hw_int01:
     master_8259     1
@@ -237,3 +252,32 @@ _hw_int15:
     slaver_8259     15   
     
     
+_restart_process:
+    mov     process_ready, %esp
+    lldt    PROC_LDT_SEL(%esp)
+    lea     PROC_STACK_TOP(%esp), %eax
+    movl    %eax,       (tss + TSS_SP0_OFFSET)
+_re_enter:
+#    decl    k_reenter
+    pop     %gs
+    pop     %fs
+    pop     %es
+    pop     %ds
+    popal
+
+    add     $4,         %esp
+    iretl
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -78,7 +78,7 @@ $(BUILD)/kernel.bin: $(GAS_KERNEL_SRC) $(C_KERNEL_SRC) $(GAS_LIBS_SRC) $(C_LIBS_
 #	for i in $(GAS_LIBS_SRC); do \
 #		$(CC) -m32 -c $$i -o $(patsubst %.s,%.o, $$i) ; 
 #	done
-	$(foreach i, $(GAS_KERNEL_SRC), $(CC) -m32 -c $(i) -o $(subst kernel,build,$(i:.s=.o));)
+	$(foreach i, $(GAS_KERNEL_SRC), $(CC) -m32 -Iinclude/ -c $(i) -o $(subst kernel,build,$(i:.s=.o));)
 	$(foreach i, $(C_KERNEL_SRC), $(CC) -m32 $(C_FLAGS) -Iinclude/ -c $(i) -o $(subst kernel,build,$(i:.c=.o));) 
 #	$(CC) -m32 -c kernel/kernel.s -o $(BUILD)/kernel.o
 #	$(CC) -m32 $(C_FLAGS) -Iinclude/ -c kernel/start.c kernel/i8259a.c -o $(BUILD)/start.o
