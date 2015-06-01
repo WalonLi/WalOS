@@ -9,7 +9,7 @@
 #include "type.h"
 #include "pm.h"
 
-typedef struct _STACK_FRAME
+typedef struct _REG_STACK
 {
     uint32_t gs ;
     uint32_t fs ;
@@ -29,11 +29,11 @@ typedef struct _STACK_FRAME
     uint32_t eflags ;
     uint32_t esp ;
     uint32_t ss ;
-} STACK_FRAME;
+} REG_STACK;
 
 typedef struct _PROCESS
 {
-    STACK_FRAME     regs ;
+    REG_STACK       regs ;
     uint16_t        ldt_sel;
     DESCRIPTOR      ldt[LDT_SIZE] ;
     uint32_t        p_id ;

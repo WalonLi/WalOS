@@ -27,7 +27,7 @@ char        task_stack[STACK_SIZE] ;
 
 
 
-void cstart()
+void init_pm_env()
 {
     // adjust position
     // position = 0 ;
@@ -200,16 +200,17 @@ void init_tss()
 
 
 extern void process_A() ;
-void pm_kernel_main()
+void inti_process_main()
 {
     show_msg("kernel main start...\n") ;
     PROCESS *proc = proc_table ;
 
+    // initial process LDT
     proc->ldt_sel = SELECTOR_LDT_FIRST ;
     memcpy(&proc->ldt[0], &gdt[SELECTOR_KERNEL_CS>>3], sizeof(DESCRIPTOR)) ;
-    proc->ldt[0].attr1 = DA_C | PRI_TASK << 5 ;
-    memcpy(&proc->ldt[1], &gdt[SELECTOR_KERNEL_CS>>3], sizeof(DESCRIPTOR)) ;
-    proc->ldt[1].attr1 = DA_DRW | PRI_TASK << 5 ;
+    proc->ldt[0].attr1 = DA_C | PRI_TASK << 5 ;     // C+RPL1
+    memcpy(&proc->ldt[1], &gdt[SELECTOR_KERNEL_DS>>3], sizeof(DESCRIPTOR)) ;
+    proc->ldt[1].attr1 = DA_DRW | PRI_TASK << 5 ;   // RW+RPL1
 
     
     proc->regs.cs = (0 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
