@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="WalOS" />
+		<Option makefile_is_custom="1" />
+		<Option execution_dir="/home/walon/Project/WalOS" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="build">
+				<Option output="build/WalOS" prefix_auto="1" extension_auto="1" />
+				<Option object_output="/home/walon/Project/WalOS/.objs" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+				<MakeCommands>
+					<Build command="$make" />
+					<CompileFile command="$make" />
+					<Clean command="$make clean" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="" />
+					<SilentBuild command="$make &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="Makefile" />
+		<Unit filename="README.md" />
+		<Unit filename="bochsrc" />
+		<Unit filename="boot/boot.ld" />
+		<Unit filename="boot/boot.s" />
+		<Unit filename="boot/include/common.s" />
+		<Unit filename="boot/include/fat12.s" />
+		<Unit filename="boot/include/pm.s" />
+		<Unit filename="boot/loader.ld" />
+		<Unit filename="boot/loader.s" />
+		<Unit filename="include/as_kernel.h" />
+		<Unit filename="include/attribute.h" />
+		<Unit filename="include/common.h" />
+		<Unit filename="include/io.h" />
+		<Unit filename="include/pm.h" />
+		<Unit filename="include/process.h" />
+		<Unit filename="include/string.h" />
+		<Unit filename="include/type.h" />
+		<Unit filename="kernel/core.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/gas/entry.ld" />
+		<Unit filename="kernel/gas/entry.s" />
+		<Unit filename="kernel/gas/hw_exception.s" />
+		<Unit filename="kernel/gas/hw_interrupt.s" />
+		<Unit filename="kernel/gas/macro.inc" />
+		<Unit filename="kernel/i8259a.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/proc_a.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="lib/common.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="lib/string.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="start.sh" />
+		<Unit filename="zbackup/Makefile" />
+		<Unit filename="zbackup/bochsrc" />
+		<Unit filename="zbackup/boot.s" />
+		<Unit filename="zbackup/common.s" />
+		<Unit filename="zbackup/fat12.s" />
+		<Unit filename="zbackup/loader.s" />
+		<Unit filename="zbackup/pm.s" />
+		<Unit filename="zbackup/start.sh" />
+		<Unit filename="zbackup/string.s" />
+		<Unit filename="zbackup/walos_x86_boot.ld" />
+		<Unit filename="zbackup/walos_x86_dos.ld" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+			<envvars />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

@@ -3,7 +3,7 @@
 #   2015/5/16
 #
 
-#.include "macro.inc"
+.include "kernel/gas/macro.inc"
 
 .code32
 
@@ -48,7 +48,7 @@ _start:
     mov     $SELECTOR_TSS, %ax
     ltr     %ax
 
-    
+
     # jump to csinit to check GDT is work fine.
     # 0x8 is SELECTOR_KRNL_CS
     ljmp    $0x8, $csinit
@@ -58,13 +58,13 @@ csinit:
     jmp     inti_process_main
     # for test hardware excpetion
     #ljmp    $0x40, $0
-    #ud2 
+    #ud2
     #hlt
-     
-     
-     
-     
-    
+
+
+
+
+
 _restart_process:
     mov     process_ready, %esp
     lldt    PROC_LDT_SEL(%esp)

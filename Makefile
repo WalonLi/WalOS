@@ -25,7 +25,7 @@ KERNEL_ENTRY_LD = kernel/gas/entry.ld
 BIN_FILES = $(BUILD)/loader.bin $(BUILD)/kernel.bin
 
 
-GAS_LIBS_SRC = 
+GAS_LIBS_SRC =
 C_LIBS_SRC = lib/string.c lib/common.c
 
 GAS_LIBS_OBJ = $(subst lib,build,$(GAS_LIBS_SRC:.s=.o))
@@ -33,7 +33,7 @@ C_LIBS_OBJ = $(subst lib,build,$(C_LIBS_SRC:.c=.o))
 
 C_FLAGS = -std=c99 -fno-builtin -fno-stack-protector -fno-zero-initialized-in-bss -Wall
 
-C_KERNEL_SRC = kernel/i8259a.c kernel/kernel.c kernel/proc_a.c
+C_KERNEL_SRC = kernel/i8259a.c kernel/core.c kernel/proc_a.c
 GAS_KERNEL_SRC = kernel/gas/entry.s kernel/gas/hw_exception.s kernel/gas/hw_interrupt.s
 KERNEL_OBJS = $(subst kernel,build,$(GAS_KERNEL_SRC:.s=.o)) $(subst kernel,build,$(C_KERNEL_SRC:.c=.o))
 
@@ -58,6 +58,7 @@ $(BUILD)/boot.bin: boot/boot.s
 	@echo "**********Making boot**********"
 	@rm -rf $(BUILD)
 	@mkdir $(BUILD)
+	mkdir build/gas
 	$(CC) -Iboot/ -c $< -o $(BUILD)/boot.o
 	@$(LD) $(BUILD)/boot.o -o $(BUILD)/boot.elf -e c -T$(BOOT_LD)
 	@$(OBJCPY) $(TRIM_FLAGS) $(BUILD)/boot.elf $@
@@ -74,12 +75,12 @@ $(BUILD)/kernel.bin: $(GAS_KERNEL_SRC) $(C_KERNEL_SRC) $(GAS_LIBS_SRC) $(C_LIBS_
 # workaround
 # due to I have no idea to resolve elf64, so compile i386 for it.
 	$(foreach i, $(GAS_LIBS_SRC), $(CC) -m32 -c $(i) -o $(subst lib,build,$(i:.s=.o));)
-	$(foreach i, $(C_LIBS_SRC), $(CC) -m32 $(C_FLAGS) -Iinclude/ -c $(i) -o $(subst lib,build,$(i:.c=.o));) 
+	$(foreach i, $(C_LIBS_SRC), $(CC) -m32 $(C_FLAGS) -Iinclude/ -c $(i) -o $(subst lib,build,$(i:.c=.o));)
 #	for i in $(GAS_LIBS_SRC); do \
-#		$(CC) -m32 -c $$i -o $(patsubst %.s,%.o, $$i) ; 
+#		$(CC) -m32 -c $$i -o $(patsubst %.s,%.o, $$i) ;
 #	done
 	$(foreach i, $(GAS_KERNEL_SRC), $(CC) -m32 -Iinclude/ -c $(i) -o $(subst kernel,build,$(i:.s=.o));)
-	$(foreach i, $(C_KERNEL_SRC), $(CC) -m32 $(C_FLAGS) -Iinclude/ -c $(i) -o $(subst kernel,build,$(i:.c=.o));) 
+	$(foreach i, $(C_KERNEL_SRC), $(CC) -m32 $(C_FLAGS) -Iinclude/ -c $(i) -o $(subst kernel,build,$(i:.c=.o));)
 #	$(CC) -m32 -c kernel/kernel.s -o $(BUILD)/kernel.o
 #	$(CC) -m32 $(C_FLAGS) -Iinclude/ -c kernel/start.c kernel/i8259a.c -o $(BUILD)/start.o
 	$(LD) -s -T$(KERNEL_ENTRY_LD) -melf_i386 $(KERNEL_OBJS) $(GAS_LIBS_OBJ) $(C_LIBS_OBJ) -o $@
