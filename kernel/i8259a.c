@@ -35,7 +35,7 @@ void init_8259A()
     outb(0x1, INT_S_CTRL_MASK) ;
 
     // OCW1
-    outb(0xff, INT_M_CTRL_MASK) ;
+    outb(0xfe, INT_M_CTRL_MASK) ;
     outb(0xff, INT_S_CTRL_MASK) ;
 }
 

@@ -21,6 +21,8 @@
 
 
 .bss
+.global     StackTop
+
 #.lcomm    StackSpace,     1024*2
 StackSpace:     .space      1024*2,        0
 StackTop:
@@ -36,7 +38,6 @@ StackTop:
 
 _start:
     mov     $StackTop,   %esp
-
     sgdtw   gdt_ptr
     call    init_pm_env
 

@@ -47,3 +47,11 @@
 .set    SELECTOR_KRNL_DS,   SELECTOR_FLAT_RW
 .set    SELECTOR_KRNL_GS,   SELECTOR_VIDEO
 
+
+.set    INT_M_CTRL,         0x20
+.set    INT_M_CTRL_MASK,    0x21
+.set    INT_S_CTRL,         0xa0
+.set    INT_S_CTRL_MASK,    0xa1
+
+.set    END_OF_INTERRUPT,   0x20
+
