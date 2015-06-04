@@ -10,10 +10,10 @@
 #include "process.h"
 
 // global
-uint8_t     gdt_ptr[6]; // 0-15:Limit  16-47:Base 
+uint8_t     gdt_ptr[6]; // 0-15:Limit  16-47:Base
 DESCRIPTOR  gdt[GDT_SIZE];
 
-uint8_t     idt_ptr[6]; // 0-15:Limit  16-47:Base 
+uint8_t     idt_ptr[6]; // 0-15:Limit  16-47:Base
 GATE        idt[IDT_SIZE];
 
 uint32_t    position = 0;
@@ -24,7 +24,7 @@ PROCESS     *process_ready ;
 PROCESS     proc_table[NR_TASKS] ;
 char        task_stack[STACK_SIZE] ;
 
-
+int         hw_int_cnt = 0 ;
 
 
 void init_pm_env()
@@ -45,11 +45,11 @@ void init_pm_env()
     memcpy(&gdt,                                // new GDT
            (void*)(*(uint32_t*)(&gdt_ptr[2])),    // base of old GDT
            *((uint16_t*)(&gdt_ptr[0])) + 1 ) ;    // limit of old GDT
-    
+
 
     uint16_t *gdt_limit = (uint16_t*)(&gdt_ptr[0]) ;
     uint32_t *gdt_base = (uint32_t*)(&gdt_ptr[2]) ;
-    
+
 
     // set new limit(GDT 128)
     *gdt_limit = GDT_SIZE * sizeof(DESCRIPTOR) - 1 ;
@@ -61,19 +61,19 @@ void init_pm_env()
     uint16_t *idt_limit = (uint16_t*)(&idt_ptr[0]) ;
     uint32_t *idt_base = (uint32_t*)(&idt_ptr[2]) ;
     *idt_limit = IDT_SIZE * sizeof(GATE) - 1 ;
-    *idt_base = (uint32_t)&idt ;  
-    
+    *idt_base = (uint32_t)&idt ;
+
     init_8259A() ;
     init_idt_descs() ;
     init_8259_irq() ;
-    
+
 
     init_tss() ;
 
     // for easily use, init ldt in gdt
-    init_gdt_desc(&gdt[INDEX_LDT_FIRST], 
-                  vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[0].ldt), 
-                  LDT_SIZE * sizeof(DESCRIPTOR)- 1, 
+    init_gdt_desc(&gdt[INDEX_LDT_FIRST],
+                  vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[0].ldt),
+                  LDT_SIZE * sizeof(DESCRIPTOR)- 1,
                   DA_LDT) ;
     show_msg("C code end...\n") ;
 
@@ -114,21 +114,21 @@ void hw_exception_handler(int vector, int err_code, int eip, int cs, int eflags)
     show_msg_ext("Exception : ", 0x74) ;
     show_msg_ext(err_msg[vector], 0x74) ;
     show_msg("\n") ;
-    
+
     char buffer[80] = { 0 };
-    
+
     show_msg_ext("eflags:", 0x74) ;
     show_msg_ext(itoa_base(eflags, buffer, 16), 0x74) ;
-    
+
     show_msg_ext(" cs:", 0x74) ;
     show_msg_ext(itoa_base(cs, buffer, 16), 0x74) ;
-    
+
     show_msg_ext(" eip:", 0x74) ;
     show_msg_ext(itoa_base(eip, buffer, 16), 0x74) ;
-    
+
     show_msg_ext(" err_code:", 0x74) ;
-    show_msg_ext(itoa_base(err_code, buffer, 16), 0x74) ;        
-    
+    show_msg_ext(itoa_base(err_code, buffer, 16), 0x74) ;
+
 }
 
 void hw_irq_handler(int irq)
@@ -141,7 +141,7 @@ void hw_irq_handler(int irq)
 
 
 
-// all descriptor initial 
+// all descriptor initial
 void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler, unsigned char privilege)
 {
     // GATE *gate_ptr = &idt[vector] ;
@@ -159,9 +159,9 @@ void init_gdt_desc(DESCRIPTOR *desc, uint32_t base, uint32_t limit, uint16_t att
     desc->limit_low   = limit & 0x0FFFF;
     desc->base_low    = base & 0x0FFFF;
     desc->base_mid    = (base >> 16) & 0x0FF;
-    desc->attr1       = attr & 0xFF;                                                               
+    desc->attr1       = attr & 0xFF;
     desc->limit_high_attr2= (((limit>>16) & 0x0F) | (attr>>8)) & 0xF0;
-    desc->base_high   = (base >> 24) & 0x0FF;  
+    desc->base_high   = (base >> 24) & 0x0FF;
 }
 
 void init_idt_descs()
@@ -212,7 +212,7 @@ void inti_process_main()
     memcpy(&proc->ldt[1], &gdt[SELECTOR_KERNEL_DS>>3], sizeof(DESCRIPTOR)) ;
     proc->ldt[1].attr1 = DA_DRW | PRI_TASK << 5 ;   // RW+RPL1
 
-    
+
     proc->regs.cs = (0 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
     proc->regs.ds = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
     proc->regs.es = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
@@ -225,6 +225,8 @@ void inti_process_main()
     proc->regs.eflags = 0x1202 ; // IF=1, IOPL=1
 
     process_ready = proc_table ;
+    hw_int_cnt = -1 ;
+
     _restart_process() ;
     while(1) ;
 }

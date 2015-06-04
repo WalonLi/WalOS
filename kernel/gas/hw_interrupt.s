@@ -5,7 +5,7 @@
 .include "kernel/gas/macro.inc"
 
 .data
-clock_int_msg:  .byte '^'
+clock_int_msg:  .asciz "^"
 
 .code32
 
@@ -13,6 +13,7 @@ clock_int_msg:  .byte '^'
 .extern     process_ready
 .extern     show_msg
 .extern     delay
+.extern     hw_int_cnt
 
 .text
 
@@ -52,6 +53,7 @@ clock_int_msg:  .byte '^'
 .align 16
 _hw_int00:
     #master_8259     0
+
     sub     $4,     %esp
 
     pushal
@@ -64,27 +66,32 @@ _hw_int00:
     mov     %dx,    %ds
     mov     %dx,    %es
 
-    mov     $StackTop,   %esp
-
     incb    %gs:(0)
     mov     $END_OF_INTERRUPT, %al
     out     %al,     $INT_M_CTRL
 
-    lea     PROC_STACK_TOP(%esp), %eax
-    movl    %eax,   (tss+TSS_ESP0)
+    incl    hw_int_cnt
+    cmpl    $0,     hw_int_cnt
+    jne     hw_int00_re_enter
 
+
+    mov     $StackTop,   %esp
     sti
-    push    $clock_int_msg
+    pushl   $clock_int_msg
     call    show_msg
     add     $4,     %esp
 
-    push    $10
-    call    delay
-    add     $4,     %esp
+//    push    $1
+//    call    delay
+//    add     $4,     %esp
     cli
 
-
     mov     process_ready, %esp
+    lea     PROC_STACK_TOP(%esp), %eax
+    movl    %eax,   (tss+TSS_ESP0)
+
+hw_int00_re_enter:
+    decl    hw_int_cnt
 
     pop     %gs
     pop     %fs
@@ -93,6 +100,7 @@ _hw_int00:
     popal
 
     add     $4,     %esp
+
     iretl
 
 _hw_int01:
