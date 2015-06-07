@@ -54,4 +54,5 @@
 .set    INT_S_CTRL_MASK,    0xa1
 
 .set    END_OF_INTERRUPT,   0x20
+.set    EOI,                0x20
 

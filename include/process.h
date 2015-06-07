@@ -41,9 +41,11 @@ typedef struct _PROCESS
 } PROCESS;
 
 
-#define NR_TASKS        1
+#define NR_TASKS        3
 #define STACK_SIZE_PROC_A   0x8000
-#define STACK_SIZE          STACK_SIZE_PROC_A
+#define STACK_SIZE_PROC_B   0x8000
+#define STACK_SIZE_PROC_C   0x8000
+#define STACK_SIZE          STACK_SIZE_PROC_A + STACK_SIZE_PROC_B + STACK_SIZE_PROC_C
 
 
 

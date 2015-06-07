@@ -13,6 +13,7 @@
 
 
 typedef void (*interrupt_handler)() ;
+typedef void (*task_handler)() ;
 
 typedef struct _DESCRIPTOR
 {
@@ -32,6 +33,13 @@ typedef struct _GATE
     uint8_t   attr ; //P:1 DPL:2 DT:1 TYPE:4
     uint16_t  offset_high ;
 } GATE ;
+
+typedef struct _TASK
+{
+    task_handler    init_eip ;
+    int             stack_size ;
+    char            name[32] ;
+} TASK ;
 
 typedef struct _TSS
 {
@@ -100,12 +108,12 @@ void init_8259A() ;
 void hw_exception_handler(int vector, int err_code, int eip, int cs, int eflags) ;
 void hw_irq_handler(int irq) ;
 void init_idt_descs() ;
+void init_ldt_descs() ;
 void init_8259_irq() ;
 void init_tss() ;
-void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler, unsigned char privilege) ;
 
-void init_gdt_desc(DESCRIPTOR *desc, uint32_t base, uint32_t limit, uint16_t attr) ;
-#define init_ldt_desc init_gdt_desc
+void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler, unsigned char privilege) ;
+void init_descriptor(DESCRIPTOR *desc, uint32_t base, uint32_t limit, uint16_t attr) ;
 
 
 

@@ -24,6 +24,14 @@ PROCESS     *process_ready ;
 PROCESS     proc_table[NR_TASKS] ;
 char        task_stack[STACK_SIZE] ;
 
+// Task table
+extern void process_A() ;
+extern void process_B() ;
+extern void process_C() ;
+TASK        task_table[NR_TASKS] = { {process_A, STACK_SIZE_PROC_A, "P_A"},
+                                     {process_B, STACK_SIZE_PROC_B, "P_B"},
+                                     {process_C, STACK_SIZE_PROC_C, "P_C"}, } ;
+
 int         hw_int_cnt = 0 ;
 
 
@@ -65,18 +73,12 @@ void init_pm_env()
 
     init_8259A() ;
     init_idt_descs() ;
+    init_ldt_descs() ;
     init_8259_irq() ;
-
-
     init_tss() ;
 
-    // for easily use, init ldt in gdt
-    init_gdt_desc(&gdt[INDEX_LDT_FIRST],
-                  vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[0].ldt),
-                  LDT_SIZE * sizeof(DESCRIPTOR)- 1,
-                  DA_LDT) ;
-    show_msg("C code end...\n") ;
 
+    show_msg("C code end...\n") ;
 }
 
 // segment to physical address
@@ -154,7 +156,7 @@ void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler
     idt[vector].offset_high = (base>>16) & 0xffff ;
 }
 
-void init_gdt_desc(DESCRIPTOR *desc, uint32_t base, uint32_t limit, uint16_t attr)
+void init_descriptor(DESCRIPTOR *desc, uint32_t base, uint32_t limit, uint16_t attr)
 {
     desc->limit_low   = limit & 0x0FFFF;
     desc->base_low    = base & 0x0FFFF;
@@ -190,39 +192,74 @@ void init_idt_descs()
 
 }
 
+void init_ldt_descs()
+{
+    uint16_t selector_ldt = SELECTOR_LDT_FIRST ;
+    for ( int i = 0 ; i < NR_TASKS ; i++ )
+    {
+        init_descriptor(&gdt[selector_ldt>>3],
+                      vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[i].ldt),
+                      LDT_SIZE * sizeof(DESCRIPTOR)- 1,
+                      DA_LDT) ;
+
+        selector_ldt += (1 << 3) ;
+    }
+}
+
+
 void init_tss()
 {
     memset(&tss, 0, sizeof(tss)) ;
     tss.ss0 = SELECTOR_KERNEL_DS ;
-    init_gdt_desc(&gdt[INDEX_TSS], vir2phys(seg2phys(SELECTOR_KERNEL_DS), &tss), sizeof(tss) - 1, DA_386TSS) ;
+    init_descriptor(&gdt[INDEX_TSS], vir2phys(seg2phys(SELECTOR_KERNEL_DS), &tss), sizeof(tss) - 1, DA_386TSS) ;
     tss.iobase = sizeof(tss) ;
 }
 
 
-extern void process_A() ;
+
 void inti_process_main()
 {
     show_msg("kernel main start...\n") ;
-    PROCESS *proc = proc_table ;
 
-    // initial process LDT
-    proc->ldt_sel = SELECTOR_LDT_FIRST ;
-    memcpy(&proc->ldt[0], &gdt[SELECTOR_KERNEL_CS>>3], sizeof(DESCRIPTOR)) ;
-    proc->ldt[0].attr1 = DA_C | PRI_TASK << 5 ;     // C+RPL1
-    memcpy(&proc->ldt[1], &gdt[SELECTOR_KERNEL_DS>>3], sizeof(DESCRIPTOR)) ;
-    proc->ldt[1].attr1 = DA_DRW | PRI_TASK << 5 ;   // RW+RPL1
+    // PROCESS *proc = proc_table ;
+    // TASK *task = task_table ;
+    char *top_stack = task_stack + STACK_SIZE ;
+    uint16_t selector_ldt = SELECTOR_LDT_FIRST ;
+
+    // initial process table
+    for ( int i = 0 ; i < NR_TASKS ; i++ )
+    {
+        proc_table[i].p_id = i ;
+        strcpy(proc_table[i].p_name, task_table[i].name) ;
+
+        proc_table[i].ldt_sel = selector_ldt ;
+
+        memcpy(&proc_table[i].ldt[0], &gdt[SELECTOR_KERNEL_CS>>3], sizeof(DESCRIPTOR)) ;
+        proc_table[i].ldt[0].attr1 = DA_C | PRI_TASK << 5 ;     // C+RPL1
+        memcpy(&proc_table[i].ldt[1], &gdt[SELECTOR_KERNEL_DS>>3], sizeof(DESCRIPTOR)) ;
+        proc_table[i].ldt[1].attr1 = DA_DRW | PRI_TASK << 5 ;   // RW+RPL1
+
+        // ldt selector index = 0
+        proc_table[i].regs.cs = (0 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
+
+        // ldt selector index = 1
+        proc_table[i].regs.ds = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
+        proc_table[i].regs.es = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
+        proc_table[i].regs.fs = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
+        proc_table[i].regs.ss = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
+
+        proc_table[i].regs.gs = (SELECTOR_KERNEL_GS & SA_RPL_MASK) | RPL_TASK ;
+
+        proc_table[i].regs.eip = (uint32_t)task_table[i].init_eip ;
+        proc_table[i].regs.esp = (uint32_t)top_stack ;
+        proc_table[i].regs.eflags = 0x1202 ; // IF=1, IOPL=1
 
 
-    proc->regs.cs = (0 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
-    proc->regs.ds = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
-    proc->regs.es = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
-    proc->regs.fs = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
-    proc->regs.ss = (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | RPL_TASK ;
+        top_stack -= task_table[i].stack_size ;
 
-    proc->regs.gs = (SELECTOR_KERNEL_GS & SA_RPL_MASK) | RPL_TASK ;
-    proc->regs.eip = (uint32_t)process_A ;
-    proc->regs.esp = (uint32_t)task_stack + STACK_SIZE ;
-    proc->regs.eflags = 0x1202 ; // IF=1, IOPL=1
+        // go to next ldt selector
+        selector_ldt += (1 << 3) ;
+    }
 
     process_ready = proc_table ;
     hw_int_cnt = -1 ;

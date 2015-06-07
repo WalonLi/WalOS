@@ -33,7 +33,7 @@ C_LIBS_OBJ = $(subst lib,build,$(C_LIBS_SRC:.c=.o))
 
 C_FLAGS = -std=c99 -fno-builtin -fno-stack-protector -fno-zero-initialized-in-bss -Wall
 
-C_KERNEL_SRC = kernel/i8259a.c kernel/core.c kernel/proc_a.c
+C_KERNEL_SRC = kernel/i8259a.c kernel/core.c kernel/proc_a.c kernel/clock_int.c
 GAS_KERNEL_SRC = kernel/gas/entry.s kernel/gas/hw_exception.s kernel/gas/hw_interrupt.s
 KERNEL_OBJS = $(subst kernel,build,$(GAS_KERNEL_SRC:.s=.o)) $(subst kernel,build,$(C_KERNEL_SRC:.c=.o))
 

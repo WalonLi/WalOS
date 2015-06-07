@@ -5,7 +5,6 @@
 .include "kernel/gas/macro.inc"
 
 .data
-clock_int_msg:  .asciz "^"
 
 .code32
 
@@ -14,6 +13,9 @@ clock_int_msg:  .asciz "^"
 .extern     show_msg
 .extern     delay
 .extern     hw_int_cnt
+
+.extern     clock_int_handler
+
 
 .text
 
@@ -72,25 +74,23 @@ _hw_int00:
 
     incl    hw_int_cnt
     cmpl    $0,     hw_int_cnt
-    jne     hw_int00_re_enter
+    jne     int00_re_enter
 
 
     mov     $StackTop,   %esp
-    sti
-    pushl   $clock_int_msg
-    call    show_msg
-    add     $4,     %esp
 
-//    push    $1
-//    call    delay
-//    add     $4,     %esp
+    sti
+    push    $0
+    call    clock_int_handler   # call c clock interrupt routine
+    add     $4,         %esp
     cli
 
     mov     process_ready, %esp
+    lldt    PROC_LDT_SEL(%esp)
     lea     PROC_STACK_TOP(%esp), %eax
     movl    %eax,   (tss+TSS_ESP0)
 
-hw_int00_re_enter:
+int00_re_enter:
     decl    hw_int_cnt
 
     pop     %gs
