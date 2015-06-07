@@ -14,10 +14,27 @@
 .extern     delay
 .extern     hw_int_cnt
 
+.extern     irq_table
 .extern     clock_int_handler
 
 
+# extern parameter
+.extern     gdt_ptr
+.extern     idt_ptr
+
+.extern     tss
+.extern     hw_int_cnt
+
+//.extern     _restart_process
+//.extern     _restart_re_enter
+
 .text
+
+.global     _restart_process
+.global     _disable_irq
+.global     _enable_irq
+
+
 
 # 2 * i8259A interrupt controller
 .global     _hw_int00
@@ -37,6 +54,47 @@
 .global     _hw_int14
 .global     _hw_int15
 
+
+_restart_process:
+    mov     process_ready, %esp
+    lldt    PROC_LDT_SEL(%esp)
+    lea     PROC_STACK_TOP(%esp), %eax
+    movl    %eax,       (tss + TSS_ESP0)
+_restart_re_enter:
+    decl    hw_int_cnt
+    pop     %gs
+    pop     %fs
+    pop     %es
+    pop     %ds
+    popal
+    add     $4,         %esp
+    iretl
+
+_save:
+    pushal
+    push    %ds
+    push    %es
+    push    %fs
+    push    %gs
+    mov     %ss,    %dx
+    mov     %dx,    %ds
+    mov     %dx,    %es
+
+    mov     %esp,   %eax
+
+    incl    hw_int_cnt
+    cmpl    $0,     hw_int_cnt
+    jne     _save_1
+
+    mov     $StackTop,   %esp
+    pushl    $_restart_process
+    jmp     (RET_ADDR_REG-PROC_STACK_BASE)(%eax)
+_save_1:
+    pushl    $_restart_re_enter
+    jmp     (RET_ADDR_REG-PROC_STACK_BASE)(%eax)
+
+
+
 # hardware interrupt
 .macro master_8259 num
     pushl   $(\num)
@@ -53,55 +111,64 @@
 .endm
 
 .align 16
-_hw_int00:
-    #master_8259     0
+.macro hw_int_master num
+    call    _save
+    # stop clock interrupt
+    in      $INT_M_CTRL_MASK, %al
+    or      $(1 << \num),     %al
+    out     %al,    $INT_M_CTRL_MASK
 
-    sub     $4,     %esp
-
-    pushal
-    push    %ds
-    push    %es
-    push    %fs
-    push    %gs
-
-    mov     %ss,    %dx
-    mov     %dx,    %ds
-    mov     %dx,    %es
-
-    incb    %gs:(0)
     mov     $END_OF_INTERRUPT, %al
     out     %al,     $INT_M_CTRL
 
-    incl    hw_int_cnt
-    cmpl    $0,     hw_int_cnt
-    jne     int00_re_enter
-
-
-    mov     $StackTop,   %esp
-
     sti
-    push    $0
-    call    clock_int_handler   # call c clock interrupt routine
-    add     $4,         %esp
+    pushl   $\num
+
+    mov     clock_int_handler, %eax
+
+    mov     (irq_table), %eax
+    #call   (irq_table + (4 * \num) )
+    lcall   $8, $irq_table
+    jmp     .
+    #call    (irq_table + (4 * \num) )
+
+
+    jmp     .
+    pop     %ecx
     cli
 
-    mov     process_ready, %esp
-    lldt    PROC_LDT_SEL(%esp)
-    lea     PROC_STACK_TOP(%esp), %eax
-    movl    %eax,   (tss+TSS_ESP0)
+    # stop clock interrupt
+    in      $INT_M_CTRL_MASK, %al
+    and     $~(1 << \num),  %al
+    out     %al,    $INT_M_CTRL_MASK
 
-int00_re_enter:
-    decl    hw_int_cnt
+    ret
+.endm
 
-    pop     %gs
-    pop     %fs
-    pop     %es
-    pop     %ds
-    popal
 
-    add     $4,     %esp
+.align 16
+_hw_int00:
+    #master_8259     0
+    hw_int_master   0
 
-    iretl
+//restart:
+//    mov     process_ready, %esp
+//    lldt    PROC_LDT_SEL(%esp)
+//    lea     PROC_STACK_TOP(%esp), %eax
+//    movl    %eax,   (tss+TSS_ESP0)
+//
+//restart_reenter:
+//    decl    hw_int_cnt
+//
+//    pop     %gs
+//    pop     %fs
+//    pop     %es
+//    pop     %ds
+//    popal
+//
+//    add     $4,     %esp
+//
+//    iretl
 
 _hw_int01:
     master_8259     1
@@ -147,3 +214,69 @@ _hw_int14:
 
 _hw_int15:
     slaver_8259     15
+
+
+_disable_irq:
+    mov     4(%esp),    %ecx
+    pushf
+    cli
+    mov     $1,         %ah
+    rol     %cl,        %ah
+    cmp     $8,         %cl
+    jae     _disable_S
+_disable_M:
+    in      $INT_M_CTRL_MASK, %al
+    test    %ah,        %al
+    jnz     _disable_done
+    or      %ah,        %al
+    out     %al,        $INT_M_CTRL_MASK
+    popf
+    mov     $1,         %eax
+    ret
+_disable_S:
+    in      $INT_S_CTRL_MASK, %al
+    test    %ah,        %al
+    jnz     _disable_done
+    or      %ah,        %al
+    out     %al,        $INT_S_CTRL_MASK
+    popf
+    mov     $1,         %eax
+    ret
+_disable_done:
+    popf
+    xor     %eax,       %eax
+    ret
+
+
+_enable_irq:
+    mov     4(%esp),    %eax
+    pushf
+    cli
+    mov     $~1,        %ah
+    rol     %cl,        %ah
+    cmp     $8,         %cl
+    jae     _enable_S
+_enable_M:
+    in      $INT_M_CTRL_MASK, %al
+    and     %ah,        %al
+    out     %al,        $INT_M_CTRL_MASK
+    popf
+    ret
+_enable_S:
+    in      $INT_S_CTRL_MASK, %al
+    and     %ah,        %al
+    out     %al,        $INT_S_CTRL_MASK
+    popf
+    ret
+
+
+
+
+
+
+
+
+
+
+
+

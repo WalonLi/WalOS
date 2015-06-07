@@ -18,6 +18,7 @@
 
 .extern     process_ready
 .extern     tss
+.extern     hw_int_cnt
 
 
 .bss
@@ -32,9 +33,7 @@ StackTop:
 
 .global     _start
 
-
-
-.global     _restart_process
+#.global     _restart_process
 
 _start:
     mov     $StackTop,   %esp
@@ -66,21 +65,7 @@ csinit:
 
 
 
-_restart_process:
-    mov     process_ready, %esp
-    lldt    PROC_LDT_SEL(%esp)
-    lea     PROC_STACK_TOP(%esp), %eax
-    movl    %eax,       (tss + TSS_ESP0)
-_re_enter:
-#    decl    k_reenter
-    pop     %gs
-    pop     %fs
-    pop     %es
-    pop     %ds
-    popal
 
-    add     $4,         %esp
-    iretl
 
 
 

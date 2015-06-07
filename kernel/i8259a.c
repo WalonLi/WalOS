@@ -5,6 +5,7 @@
 
 #include "io.h"
 #include "pm.h"
+#include "common.h"
 
 // master 8259a
 #define INT_M_CTRL  0x20
@@ -15,6 +16,17 @@
 
 #define INT_VECTOR_IRQ0     0x20
 #define INT_VECTOR_IRQ8     0x28
+
+extern irq_handler irq_table[] ;
+
+
+void dummy_irq_handler(int irq)
+{
+    char buf[50] ;
+    show_msg("irq:") ;
+    show_msg(itoa(irq, buf)) ;
+    show_msg("\n") ;
+}
 
 void init_8259A()
 {
@@ -35,10 +47,22 @@ void init_8259A()
     outb(0x1, INT_S_CTRL_MASK) ;
 
     // OCW1
-    outb(0xfe, INT_M_CTRL_MASK) ;
+    outb(0xff, INT_M_CTRL_MASK) ;
     outb(0xff, INT_S_CTRL_MASK) ;
+
+    // reset IRQ handler
+    for ( int i = 0 ; i < IRQ_CNT ; i++ )
+    {
+        irq_table[i] = (irq_handler)dummy_irq_handler ;
+    }
 }
 
+
+void set_irq_handler(int irq, irq_handler handler)
+{
+    _disable_irq(irq) ;
+    irq_table[irq] = handler ;
+}
 
 void init_8259_irq()
 {

@@ -21,18 +21,19 @@ uint32_t    position = 0;
 TSS         tss ;
 PROCESS     *process_ready ;
 
-PROCESS     proc_table[NR_TASKS] ;
+PROCESS     proc_table[TASK_CNT] ;
 char        task_stack[STACK_SIZE] ;
 
 // Task table
 extern void process_A() ;
 extern void process_B() ;
 extern void process_C() ;
-TASK        task_table[NR_TASKS] = { {process_A, STACK_SIZE_PROC_A, "P_A"},
+TASK        task_table[TASK_CNT] = { {process_A, STACK_SIZE_PROC_A, "P_A"},
                                      {process_B, STACK_SIZE_PROC_B, "P_B"},
                                      {process_C, STACK_SIZE_PROC_C, "P_C"}, } ;
 
 int         hw_int_cnt = 0 ;
+irq_handler irq_table[IRQ_CNT];
 
 
 void init_pm_env()
@@ -67,7 +68,7 @@ void init_pm_env()
     show_msg("Prepare IDT\n") ;
     // prepare IDT
     uint16_t *idt_limit = (uint16_t*)(&idt_ptr[0]) ;
-    uint32_t *idt_base = (uint32_t*)(&idt_ptr[2]) ;
+    uint32_t *idt_base = (uint32_t*)(&idt_ptr[2]);
     *idt_limit = IDT_SIZE * sizeof(GATE) - 1 ;
     *idt_base = (uint32_t)&idt ;
 
@@ -195,7 +196,7 @@ void init_idt_descs()
 void init_ldt_descs()
 {
     uint16_t selector_ldt = SELECTOR_LDT_FIRST ;
-    for ( int i = 0 ; i < NR_TASKS ; i++ )
+    for ( int i = 0 ; i < TASK_CNT ; i++ )
     {
         init_descriptor(&gdt[selector_ldt>>3],
                       vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[i].ldt),
@@ -227,7 +228,7 @@ void inti_process_main()
     uint16_t selector_ldt = SELECTOR_LDT_FIRST ;
 
     // initial process table
-    for ( int i = 0 ; i < NR_TASKS ; i++ )
+    for ( int i = 0 ; i < TASK_CNT ; i++ )
     {
         proc_table[i].p_id = i ;
         strcpy(proc_table[i].p_name, task_table[i].name) ;
@@ -261,8 +262,19 @@ void inti_process_main()
         selector_ldt += (1 << 3) ;
     }
 
+
+    set_irq_handler(0, clock_int_handler) ;
+    _enable_irq(0) ;
+
+    char buf[50] ;
+    show_msg(itoa_base((int)irq_table[0], buf, 16)) ;
+    show_msg("+") ;
+    show_msg(itoa_base((int)clock_int_handler, buf, 16)) ;
+
+
+
     process_ready = proc_table ;
-    hw_int_cnt = -1 ;
+    hw_int_cnt = 0 ;
 
     _restart_process() ;
     while(1) ;
