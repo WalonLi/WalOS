@@ -78,10 +78,10 @@ _save:
 
     mov     $StackTop,   %esp
     pushl    $restart_process
-    jmp     (RET_ADDR_REG-PROC_STACK_BASE)(%eax)
+    jmp     *(RET_ADDR_REG-PROC_STACK_BASE)(%eax)
 _save_1:
     pushl    $restart_re_enter
-    jmp     (RET_ADDR_REG-PROC_STACK_BASE)(%eax)
+    jmp     *(RET_ADDR_REG-PROC_STACK_BASE)(%eax)
 
 
 
@@ -115,8 +115,7 @@ _save_1:
     pushl   $\num
 
     mov     $\num,  %eax
-    call    irq_table(, %eax, 4) # irq_table[%eax]
-    jmp     .
+    call    *irq_table(, %eax, 4)   # irq_table[%eax]
     pop     %ecx
     cli
 

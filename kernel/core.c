@@ -4,6 +4,8 @@
 **/
 
 #include "kernel/core.h"
+#include "kernel/global.h"
+#include "kernel/exception.h"
 #include "lib/string.h"
 #include "lib/common.h"
 

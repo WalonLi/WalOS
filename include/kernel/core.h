@@ -7,10 +7,10 @@
 #define __CORE_H__
 
 #include "type.h"
-#include "kernel/attribute.h"
-#include "kernel/interrupt.h"
-#include "kernel/process.h"
-#include "kernel/global.h"
+//#include "kernel/attribute.h"
+//#include "kernel/interrupt.h"
+//#include "kernel/process.h"
+
 
 typedef void (*interrupt_handler)() ;
 
@@ -104,7 +104,6 @@ void init_pm_env() ;
 void init_ldt_descs() ;
 void init_tss() ;
 void init_process_main() ;
-
 
 
 

@@ -7,6 +7,8 @@
 #define __GLOBAL_H__
 
 #include "kernel/core.h"
+#include "kernel/process.h"
+#include "kernel/interrupt.h"
 
 // global parameter
 extern uint8_t      gdt_ptr[6]; // 0-15:Limit  16-47:Base

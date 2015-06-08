@@ -52,4 +52,5 @@ void     alignment_check_exception();
 void     machine_check_exception();
 void     simd_floating_point_exception();
 
+void    init_hw_exception_idt() ;
 #endif

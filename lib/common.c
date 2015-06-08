@@ -4,9 +4,9 @@
 **/
 
 #include "type.h"
-#include "common.h"
-#include "string.h"
-#include "core.h"
+#include "lib/common.h"
+#include "lib/string.h"
+#include "kernel/core.h"
 
 extern uint32_t position ;
 
@@ -28,7 +28,7 @@ void show_msg_ext(char *msg, uint16_t color)
             position += 2 ;
         }
     }
-} 
+}
 
 
 int atoi(const char *s)
@@ -85,7 +85,7 @@ char *itoa_base(int value, char *dest, int radix)
     {
         int c = value % radix ;
         value /= radix ;
-        
+
         dest[i++] = (c < 10) ? (c+'0') : (c + 'a' - 10) ;
     }
 
@@ -102,6 +102,6 @@ char *itoa_base(int value, char *dest, int radix)
 void delay(int time)
 {
     for (int i = 0 ; i  < time ; i++)
-      for (volatile int j = 0 ; j < 10000 ; j++ ) 
+      for (volatile int j = 0 ; j < 10000 ; j++ )
         ;
 }

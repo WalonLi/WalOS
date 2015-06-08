@@ -4,8 +4,9 @@
 **/
 
 #include "kernel/io.h"
-#include "kernel/common.h"
 #include "kernel/interrupt.h"
+#include "kernel/global.h"
+#include "lib/common.h"
 
 
 void init_8259a()
@@ -67,7 +68,7 @@ void dummy_irq_handler(int irq)
 
 void set_irq_handler(int irq, irq_handler handler)
 {
-    _disable_irq(irq) ;
+    disable_irq(irq) ;
     irq_table[irq] = handler ;
 }
 

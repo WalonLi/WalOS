@@ -2,9 +2,10 @@
     Provide by Walon Li
     2015/6/8
 **/
-
+#include "kernel/global.h"
 #include "kernel/process.h"
 #include "lib/common.h"
+#include "lib/string.h"
 
 void init_process_main()
 {
@@ -52,7 +53,7 @@ void init_process_main()
 
 
     set_irq_handler(0, clock_int_handler) ;
-    _enable_irq(0) ;
+    enable_irq(0) ;
 
     //char buf[50] ;
     //show_msg(itoa_base((int)irq_table[0], buf, 16)) ;

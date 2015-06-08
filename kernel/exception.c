@@ -3,6 +3,7 @@
     2015/6/8
 **/
 
+#include "kernel/global.h"
 #include "kernel/exception.h"
 #include "lib/common.h"
 
