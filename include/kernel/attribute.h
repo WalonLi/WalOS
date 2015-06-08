@@ -1,9 +1,11 @@
-
+/**
+    Provide by Walon Li
+    2015/6/8
+**/
 
 
 #ifndef __ATTRIBUTE_H__
 #define __ATTRIBUTE_H__
-
 
 
 // Protected mode attribute

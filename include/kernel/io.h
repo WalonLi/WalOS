@@ -3,8 +3,8 @@
     2015/5/27
 **/
 
-#ifndef WALOS_IO_H
-#define WALOS_IO_H
+#ifndef __IO_H__
+#define __IO_H__
 
 #define BUILDIO(bwl, bw, type)                                          \
 static inline void out##bwl(unsigned type value, int port)              \

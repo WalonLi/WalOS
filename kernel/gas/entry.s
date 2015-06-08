@@ -55,7 +55,7 @@ _start:
 csinit:
 
     #sti
-    jmp     inti_process_main
+    jmp     init_process_main
     # for test hardware excpetion
     #ljmp    $0x40, $0
     #ud2

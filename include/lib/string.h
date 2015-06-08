@@ -4,8 +4,8 @@
 **/
 
 
-#ifndef WALOS_STRING_H
-#define WALOS_STRING_H
+#ifndef __STRING_H__
+#define __STRING_H__
 void memcpy(void *dest, void *src, int size) ;
 void memset(void *dest, char c, int cnt) ;
 int memcmp(const void *p1, const void *p2, int cnt) ;

@@ -11,100 +11,100 @@
 
 # hardware execption
 # wiki : http://en.wikipedia.org/wiki/Interrupt_descriptor_table
-.global     _division_by_error
-.global     _debugger
-.global     _nmi
-.global     _breakpoint
-.global     _overflow
-.global     _bounds
-.global     _invalid_opcode
-.global     _coprocessor_not_available
-.global     _double_foult
-.global     _coprocessor_segment_overrun
-.global     _invalid_task_state_segment
-.global     _segment_not_present
-.global     _stack_fault
-.global     _general_protected_fault
-.global     _page_fault
-.global     _reserved
-.global     _math_fault
-.global     _alignment_check
-.global     _machine_check
-.global     _simd_floating_point_exception
+.global     division_by_error_exception
+.global     debugger_exception
+.global     nmi_exception
+.global     breakpoint_exception
+.global     overflow_exception
+.global     bounds_exception
+.global     invalid_opcode_exception
+.global     coprocessor_not_available_exception
+.global     double_foult_exception
+.global     coprocessor_segment_overrun_exception
+.global     invalid_task_state_segment_exception
+.global     segment_not_present_exception
+.global     stack_fault_exception
+.global     general_protected_fault_exception
+.global     page_fault_exception
+.global     reserved
+.global     math_fault_exception
+.global     alignment_check_exception
+.global     machine_check_exception
+.global     simd_floating_point_exception
 
 # hardware exception
 # if push 0xffffffff at first, means no error code.
-_division_by_error:
+division_by_error_exception:
     push    $0xffffffff
     push    $0
     jmp     _exception
-_debugger:
+debugger_exception:
     push    $0xffffffff
     push    $1
     jmp     _exception
-_nmi:
+nmi_exception:
     push    $0xffffffff
     push    $2
     jmp     _exception
-_breakpoint:
+breakpoint_exception:
     push    $0xffffffff
     push    $3
     jmp     _exception
-_overflow:
+overflow_exception:
     push    $0xffffffff
     push    $4
     jmp     _exception
-_bounds:
+bounds_exception:
     push    $0xffffffff
     push    $5
     jmp     _exception
-_invalid_opcode:
+invalid_opcode_exception:
     push    $0xffffffff
     push    $6
     jmp     _exception
-_coprocessor_not_available:
+coprocessor_not_available_exception:
     push    $0xffffffff
     push    $7
     jmp     _exception
-_double_foult:
+double_foult_exception:
     push    $8
     jmp     _exception
-_coprocessor_segment_overrun:
+coprocessor_segment_overrun_exception:
     push    $0xffffffff
     push    $9
     jmp     _exception 
-_invalid_task_state_segment:
+invalid_task_state_segment_exception:
     push    $10
     jmp     _exception
-_segment_not_present:
+segment_not_present_exception:
     push    $11
     jmp     _exception
-_stack_fault:
+stack_fault_exception:
     push    $12
     jmp     _exception
-_general_protected_fault:
+general_protected_fault_exception:
     push    $13
     jmp     _exception    
-_page_fault:
+page_fault_exception:
     push    $14
     jmp     _exception    
-_reserved:
+reserved:
     push    $0xffffffff
     push    $15
     jmp     _exception    
-_math_fault:
+math_fault_exception:
     push    $0xffffffff
     push    $16
     jmp     _exception    
-_alignment_check:
+alignment_check_exception:
     push    $0xffffffff
     push    $17
     jmp     _exception    
-_machine_check:
+machine_check_exception:
     push    $0xffffffff
     push    $18
     jmp     _exception    
-_simd_floating_point_exception:
+simd_floating_point_exception:
     push    $0xffffffff
     push    $19
     jmp     _exception  

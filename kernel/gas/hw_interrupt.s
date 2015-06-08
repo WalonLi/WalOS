@@ -15,52 +15,42 @@
 .extern     hw_int_cnt
 
 .extern     irq_table
-.extern     clock_int_handler
-
-
-# extern parameter
-.extern     gdt_ptr
-.extern     idt_ptr
-
 .extern     tss
-.extern     hw_int_cnt
 
-//.extern     _restart_process
-//.extern     _restart_re_enter
 
 .text
 
-.global     _restart_process
-.global     _disable_irq
-.global     _enable_irq
+.global     restart_process
+.global     disable_irq
+.global     enable_irq
 
 
 
 # 2 * i8259A interrupt controller
-.global     _hw_int00
-.global     _hw_int01
-.global     _hw_int02
-.global     _hw_int03
-.global     _hw_int04
-.global     _hw_int05
-.global     _hw_int06
-.global     _hw_int07
-.global     _hw_int08
-.global     _hw_int09
-.global     _hw_int10
-.global     _hw_int11
-.global     _hw_int12
-.global     _hw_int13
-.global     _hw_int14
-.global     _hw_int15
+.global     hw_int00
+.global     hw_int01
+.global     hw_int02
+.global     hw_int03
+.global     hw_int04
+.global     hw_int05
+.global     hw_int06
+.global     hw_int07
+.global     hw_int08
+.global     hw_int09
+.global     hw_int10
+.global     hw_int11
+.global     hw_int12
+.global     hw_int13
+.global     hw_int14
+.global     hw_int15
 
 
-_restart_process:
+restart_process:
     mov     process_ready, %esp
     lldt    PROC_LDT_SEL(%esp)
     lea     PROC_STACK_TOP(%esp), %eax
     movl    %eax,       (tss + TSS_ESP0)
-_restart_re_enter:
+restart_re_enter:
     decl    hw_int_cnt
     pop     %gs
     pop     %fs
@@ -87,10 +77,10 @@ _save:
     jne     _save_1
 
     mov     $StackTop,   %esp
-    pushl    $_restart_process
+    pushl    $restart_process
     jmp     (RET_ADDR_REG-PROC_STACK_BASE)(%eax)
 _save_1:
-    pushl    $_restart_re_enter
+    pushl    $restart_re_enter
     jmp     (RET_ADDR_REG-PROC_STACK_BASE)(%eax)
 
 
@@ -98,14 +88,14 @@ _save_1:
 # hardware interrupt
 .macro master_8259 num
     pushl   $(\num)
-    call    hw_irq_handler
+    call    dummy_irq_handler
     add     $4,     %esp
     hlt
 .endm
 
 .macro slaver_8259 num
     pushl   $(\num)
-    call    hw_irq_handler
+    call    dummy_irq_handler
     add     $4,     %esp
     hlt
 .endm
@@ -124,15 +114,8 @@ _save_1:
     sti
     pushl   $\num
 
-    mov     clock_int_handler, %eax
-
-    mov     (irq_table), %eax
-    #call   (irq_table + (4 * \num) )
-    lcall   $8, $irq_table
-    jmp     .
-    #call    (irq_table + (4 * \num) )
-
-
+    mov     $\num,  %eax
+    call    irq_table(, %eax, 4) # irq_table[%eax]
     jmp     .
     pop     %ecx
     cli
@@ -147,76 +130,57 @@ _save_1:
 
 
 .align 16
-_hw_int00:
+hw_int00:
     #master_8259     0
     hw_int_master   0
 
-//restart:
-//    mov     process_ready, %esp
-//    lldt    PROC_LDT_SEL(%esp)
-//    lea     PROC_STACK_TOP(%esp), %eax
-//    movl    %eax,   (tss+TSS_ESP0)
-//
-//restart_reenter:
-//    decl    hw_int_cnt
-//
-//    pop     %gs
-//    pop     %fs
-//    pop     %es
-//    pop     %ds
-//    popal
-//
-//    add     $4,     %esp
-//
-//    iretl
-
-_hw_int01:
+hw_int01:
     master_8259     1
 
-_hw_int02:
+hw_int02:
     master_8259     2
 
-_hw_int03:
+hw_int03:
     master_8259     3
 
-_hw_int04:
+hw_int04:
     master_8259     4
 
-_hw_int05:
+hw_int05:
     master_8259     5
 
-_hw_int06:
+hw_int06:
     master_8259     6
 
-_hw_int07:
+hw_int07:
     master_8259     7
 
-_hw_int08:
+hw_int08:
     slaver_8259     8
 
-_hw_int09:
+hw_int09:
     slaver_8259     9
 
-_hw_int10:
+hw_int10:
     slaver_8259     10
 
-_hw_int11:
+hw_int11:
     slaver_8259     11
 
-_hw_int12:
+hw_int12:
     slaver_8259     12
 
-_hw_int13:
+hw_int13:
     slaver_8259     13
 
-_hw_int14:
+hw_int14:
     slaver_8259     14
 
-_hw_int15:
+hw_int15:
     slaver_8259     15
 
 
-_disable_irq:
+disable_irq:
     mov     4(%esp),    %ecx
     pushf
     cli
@@ -248,7 +212,7 @@ _disable_done:
     ret
 
 
-_enable_irq:
+enable_irq:
     mov     4(%esp),    %eax
     pushf
     cli

@@ -3,18 +3,16 @@
     2015/5/22
 **/
 
-#ifndef WALOS_PM_H
-#define WALOS_PM_H
+#ifndef __CORE_H__
+#define __CORE_H__
 
 #include "type.h"
-#include "attribute.h"
-#include "as_kernel.h"
-
-
+#include "kernel/attribute.h"
+#include "kernel/interrupt.h"
+#include "kernel/process.h"
+#include "kernel/global.h"
 
 typedef void (*interrupt_handler)() ;
-typedef void (*task_handler)() ;
-typedef void (*irq_handler)(int irq) ;
 
 typedef struct _DESCRIPTOR
 {
@@ -34,13 +32,6 @@ typedef struct _GATE
     uint8_t   attr ; //P:1 DPL:2 DT:1 TYPE:4
     uint16_t  offset_high ;
 } GATE ;
-
-typedef struct _TASK
-{
-    task_handler    init_eip ;
-    int             stack_size ;
-    char            name[32] ;
-} TASK ;
 
 typedef struct _TSS
 {
@@ -101,26 +92,20 @@ typedef struct _TSS
 #define SELECTOR_KERNEL_DS  SELECTOR_FLAT_RW
 #define SELECTOR_KERNEL_GS  SELECTOR_VIDEO
 
-#define IRQ_CNT 16
 
 
 #define vir2phys(seg_base, vir) (uint32_t)(((uint32_t)seg_base) + (uint32_t)(vir))
 uint32_t seg2phys(uint16_t seg) ;
 
-void init_8259A() ;
-void hw_exception_handler(int vector, int err_code, int eip, int cs, int eflags) ;
-void hw_irq_handler(int irq) ;
-void init_idt_descs() ;
-void init_ldt_descs() ;
-void init_8259_irq() ;
-void set_irq_handler(int irq, irq_handler handler) ;
-void init_tss() ;
-
 void init_idt_desc(unsigned char vector, uint8_t type, interrupt_handler handler, unsigned char privilege) ;
 void init_descriptor(DESCRIPTOR *desc, uint32_t base, uint32_t limit, uint16_t attr) ;
 
-void _enable_irq(int irq) ;
-void _disable_irq(int irq) ;
-void clock_int_handler(int irq) ;
+void init_pm_env() ;
+void init_ldt_descs() ;
+void init_tss() ;
+void init_process_main() ;
+
+
+
 
 #endif

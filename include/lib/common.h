@@ -3,8 +3,8 @@
     2015/5/23
 **/
 
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef __COMMON_H__
+#define __COMMON_H__
 
 #include "type.h"
 

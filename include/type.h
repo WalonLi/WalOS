@@ -3,8 +3,8 @@
     2015/5/22
 **/
 
-#ifndef WALOS_TYPE_H
-#define WALOS_TYPE_H
+#ifndef __TYPE_H__
+#define __TYPE_H__
 
 typedef signed      char    int8_t ;
 typedef unsigned    char    uint8_t ;

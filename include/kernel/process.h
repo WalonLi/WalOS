@@ -3,11 +3,13 @@
     2015/5/31
 **/
 
-#ifndef PROCESS_H
-#define PROCESS_H
+#ifndef __PROCESS_H__
+#define __PROCESS_H__
 
 #include "type.h"
-#include "pm.h"
+#include "kernel/core.h"
+
+typedef void (*task_handler)() ;
 
 typedef struct _REG_STACK
 {
@@ -40,16 +42,22 @@ typedef struct _PROCESS
     char            p_name[16] ;
 } PROCESS;
 
+typedef struct _TASK
+{
+    task_handler    init_eip ;
+    int             stack_size ;
+    char            name[32] ;
+} TASK ;
 
-#define TASK_CNT        3
+#define TASK_CNT            3
 #define STACK_SIZE_PROC_A   0x8000
 #define STACK_SIZE_PROC_B   0x8000
 #define STACK_SIZE_PROC_C   0x8000
 #define STACK_SIZE          STACK_SIZE_PROC_A + STACK_SIZE_PROC_B + STACK_SIZE_PROC_C
 
 
-
-
+void init_process_main() ;
+void restart_process() ;
 
 
 #endif
