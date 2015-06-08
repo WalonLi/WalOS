@@ -64,19 +64,20 @@ void init_process_main()
 
     process_ready = proc_table ;
     hw_int_cnt = 0 ;
-
+    ticks = 0 ;
     restart_process() ;
     while(1) ;
 }
 
+extern int get_ticks() ;
 void process_A()
 {
-    volatile int i = 0 ;
+    //volatile int i = 0 ;
     while (true)
     {
         char buf[10] = { 0 };
         show_msg("A") ;
-        show_msg(itoa(i++, buf)) ;
+        show_msg(itoa(get_ticks(), buf)) ;
         show_msg(".") ;
         delay(5) ;
     }

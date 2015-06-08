@@ -8,7 +8,11 @@
 #include "kernel/global.h"
 #include "lib/common.h"
 
-
+/****************************************************************/
+/****************************************************************/
+/**************** HARDWARE interrupt essential*******************/
+/****************************************************************/
+/****************************************************************/
 void init_8259a()
 {
     // ICW1
@@ -77,6 +81,7 @@ void set_irq_handler(int irq, irq_handler handler)
 void clock_int_handler(int irq)
 {
     show_msg("#") ;
+    ticks++ ;
 
     if (hw_int_cnt != 0)
     {
@@ -91,10 +96,22 @@ void clock_int_handler(int irq)
     }
 }
 
-void fuck(int a)
+
+/****************************************************************/
+/****************************************************************/
+/**************** SOFTWARE interrupt essential*******************/
+/****************************************************************/
+/****************************************************************/
+void init_sw_interrupt_idt()
 {
-    volatile int i = 0 ;
-    if (i < 5)
-        ;
+    init_idt_desc(INT_VECTOR_SYS_CALL, DA_386IGate, sys_call, PRI_USER) ;
 }
+
+int sys_get_ticks()
+{
+    return ticks ;
+}
+
+
+
 

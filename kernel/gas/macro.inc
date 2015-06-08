@@ -56,3 +56,9 @@
 .set    END_OF_INTERRUPT,   0x20
 .set    EOI,                0x20
 
+
+# software interrupt
+.set    INT_VECTOR_SYS_CALL,    0x90
+.set    NUM_GET_TICKS,          0x0
+
+

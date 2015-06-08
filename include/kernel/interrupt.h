@@ -9,8 +9,10 @@
 #include "kernel/core.h"
 #include "kernel/attribute.h"
 
-typedef void (*irq_handler)(int irq) ;
 
+// HARDWARE
+
+typedef void (*irq_handler)(int irq) ;
 // master 8259a
 #define INT_M_CTRL          0x20
 #define INT_M_CTRL_MASK     0x21
@@ -20,6 +22,7 @@ typedef void (*irq_handler)(int irq) ;
 
 #define INT_VECTOR_IRQ0     0x20
 #define INT_VECTOR_IRQ8     0x28
+
 
 #define IRQ_CNT             16
 
@@ -46,14 +49,18 @@ void    hw_int15() ;
 void    enable_irq(int irq) ;
 void    disable_irq(int irq) ;
 
-
 void    init_8259a() ;
-
 void    init_hw_interrupt_idt() ;
 void    dummy_irq_handler(int irq) ;
 void    set_irq_handler(int irq, irq_handler handler) ;
-
 void    clock_int_handler(int irq) ;
-void    fuck(int a) ;
+
+
+// SOFTWARE
+#define INT_VECTOR_SYS_CALL 0x90
+void    sys_call() ;
+int     sys_get_ticks() ;
+
+void    init_sw_interrupt_idt() ;
 
 #endif

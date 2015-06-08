@@ -13,7 +13,7 @@
 .extern     show_msg
 .extern     delay
 .extern     hw_int_cnt
-
+.extern     sys_call_table
 .extern     irq_table
 .extern     tss
 
@@ -21,12 +21,10 @@
 .text
 
 .global     restart_process
-.global     disable_irq
-.global     enable_irq
-
 
 
 # 2 * i8259A interrupt controller
+# HARDWARE interrrupt
 .global     hw_int00
 .global     hw_int01
 .global     hw_int02
@@ -43,7 +41,11 @@
 .global     hw_int13
 .global     hw_int14
 .global     hw_int15
+.global     disable_irq
+.global     enable_irq
 
+# SOFTWARE interrupt
+.global     sys_call
 
 restart_process:
     mov     process_ready, %esp
@@ -70,7 +72,7 @@ _save:
     mov     %dx,    %ds
     mov     %dx,    %es
 
-    mov     %esp,   %eax
+    mov     %esp,   %esi
 
     incl    hw_int_cnt
     cmpl    $0,     hw_int_cnt
@@ -78,10 +80,10 @@ _save:
 
     mov     $StackTop,   %esp
     pushl    $restart_process
-    jmp     *(RET_ADDR_REG-PROC_STACK_BASE)(%eax)
+    jmp     *(RET_ADDR_REG-PROC_STACK_BASE)(%esi)
 _save_1:
     pushl    $restart_re_enter
-    jmp     *(RET_ADDR_REG-PROC_STACK_BASE)(%eax)
+    jmp     *(RET_ADDR_REG-PROC_STACK_BASE)(%esi)
 
 
 
@@ -114,8 +116,8 @@ _save_1:
     sti
     pushl   $\num
 
-    mov     $\num,  %eax
-    call    *irq_table(, %eax, 4)   # irq_table[%eax]
+    mov     $\num,  %esi
+    call    *irq_table(, %esi, 4)   # irq_table[%esi]
     pop     %ecx
     cli
 
@@ -233,6 +235,16 @@ _enable_S:
     ret
 
 
+# software interrupt
+sys_call:
+    call    _save
+    sti
+
+    call    *sys_call_table(, %eax, 4)
+    movl    %eax,       (EAX_REG-PROC_STACK_BASE)(%esi)
+
+    cli
+    ret
 
 
 

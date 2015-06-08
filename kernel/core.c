@@ -102,6 +102,7 @@ void init_pm_env()
     init_8259a() ;
     init_hw_exception_idt() ;
     init_hw_interrupt_idt() ;
+    init_sw_interrupt_idt() ;
     init_ldt_descs() ;
     init_tss() ;
 

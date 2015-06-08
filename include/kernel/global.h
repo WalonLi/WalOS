@@ -31,5 +31,7 @@ extern int          hw_int_cnt ;
 
 extern irq_handler  irq_table[IRQ_CNT];
 
+extern void         *sys_call_table[1] ;
 
+extern int          ticks ;
 #endif

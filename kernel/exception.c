@@ -7,6 +7,8 @@
 #include "kernel/exception.h"
 #include "lib/common.h"
 
+// exception also a kind of interrupt, but it's too big that I put another file.
+
 // hw exception and handler initial function
 void hw_exception_handler(int vector, int err_code, int eip, int cs, int eflags)
 {
@@ -55,25 +57,25 @@ void hw_exception_handler(int vector, int err_code, int eip, int cs, int eflags)
 void init_hw_exception_idt()
 {
     // initial all interrupt gate
-    init_idt_desc(HW_EXCEPTION_DIVISION_BY_ERROR, DA_386IGate, division_by_error_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_DEBUGGER, DA_386IGate, debugger_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_NMI, DA_386IGate, nmi_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_BREAKPOINT, DA_386IGate, breakpoint_exception, PRI_USER) ;
-    init_idt_desc(HW_EXCEPTION_OVERFLOW, DA_386IGate, overflow_exception, PRI_USER) ;
-    init_idt_desc(HW_EXCEPTION_BOUNDS, DA_386IGate, bounds_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_INVALILD_OPCODE, DA_386IGate, invalid_opcode_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_COPR_NOT_AVAIL, DA_386IGate, coprocessor_not_available_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_DOUBLE_FAULT, DA_386IGate, double_foult_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_COPR_SEG_OVERRUN, DA_386IGate, coprocessor_segment_overrun_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_INVALID_TSS, DA_386IGate, invalid_task_state_segment_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_SEG_NOT_PRESENT, DA_386IGate, segment_not_present_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_STACK_FAULT, DA_386IGate, stack_fault_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_GERNERAL_PROTECT_FAULT, DA_386IGate, general_protected_fault_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_PAGE_FAULT, DA_386IGate, page_fault_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_RESERVED, DA_386IGate, reserved, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_MATH_FAULT, DA_386IGate, math_fault_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_ALIGN_CHECK, DA_386IGate, alignment_check_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_MACHINE_CHECK, DA_386IGate, machine_check_exception, PRI_KRNL) ;
-    init_idt_desc(HW_EXCEPTION_SIMD_FLOAT_POINT_EXECPT, DA_386IGate, simd_floating_point_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_DIVISION_BY_ERROR, DA_386IGate, division_by_error_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_DEBUGGER, DA_386IGate, debugger_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_NMI, DA_386IGate, nmi_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_BREAKPOINT, DA_386IGate, breakpoint_exception, PRI_USER) ;
+    init_idt_desc(INT_VECTOR_OVERFLOW, DA_386IGate, overflow_exception, PRI_USER) ;
+    init_idt_desc(INT_VECTOR_BOUNDS, DA_386IGate, bounds_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_INVALILD_OPCODE, DA_386IGate, invalid_opcode_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_COPR_NOT_AVAIL, DA_386IGate, coprocessor_not_available_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_DOUBLE_FAULT, DA_386IGate, double_foult_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_COPR_SEG_OVERRUN, DA_386IGate, coprocessor_segment_overrun_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_INVALID_TSS, DA_386IGate, invalid_task_state_segment_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_SEG_NOT_PRESENT, DA_386IGate, segment_not_present_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_STACK_FAULT, DA_386IGate, stack_fault_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_GERNERAL_PROTECT_FAULT, DA_386IGate, general_protected_fault_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_PAGE_FAULT, DA_386IGate, page_fault_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_RESERVED, DA_386IGate, reserved, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_MATH_FAULT, DA_386IGate, math_fault_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_ALIGN_CHECK, DA_386IGate, alignment_check_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_MACHINE_CHECK, DA_386IGate, machine_check_exception, PRI_KRNL) ;
+    init_idt_desc(INT_VECTOR_SIMD_FLOAT_POINT_EXECPT, DA_386IGate, simd_floating_point_exception, PRI_KRNL) ;
 }
 

@@ -10,26 +10,26 @@
 #include "kernel/attribute.h"
 
 // HW interrupt vector table
-#define HW_EXCEPTION_DIVISION_BY_ERROR         0x0
-#define HW_EXCEPTION_DEBUGGER                  0x1
-#define HW_EXCEPTION_NMI                       0x2
-#define HW_EXCEPTION_BREAKPOINT                0x3
-#define HW_EXCEPTION_OVERFLOW                  0x4
-#define HW_EXCEPTION_BOUNDS                    0x5
-#define HW_EXCEPTION_INVALILD_OPCODE           0x6
-#define HW_EXCEPTION_COPR_NOT_AVAIL            0x7
-#define HW_EXCEPTION_DOUBLE_FAULT              0x8
-#define HW_EXCEPTION_COPR_SEG_OVERRUN          0x9
-#define HW_EXCEPTION_INVALID_TSS               0xA
-#define HW_EXCEPTION_SEG_NOT_PRESENT           0xB
-#define HW_EXCEPTION_STACK_FAULT               0xC
-#define HW_EXCEPTION_GERNERAL_PROTECT_FAULT    0xD
-#define HW_EXCEPTION_PAGE_FAULT                0xE
-#define HW_EXCEPTION_RESERVED                  0xF
-#define HW_EXCEPTION_MATH_FAULT                0x10
-#define HW_EXCEPTION_ALIGN_CHECK               0x11
-#define HW_EXCEPTION_MACHINE_CHECK             0x12
-#define HW_EXCEPTION_SIMD_FLOAT_POINT_EXECPT   0x13
+#define INT_VECTOR_DIVISION_BY_ERROR         0x0
+#define INT_VECTOR_DEBUGGER                  0x1
+#define INT_VECTOR_NMI                       0x2
+#define INT_VECTOR_BREAKPOINT                0x3
+#define INT_VECTOR_OVERFLOW                  0x4
+#define INT_VECTOR_BOUNDS                    0x5
+#define INT_VECTOR_INVALILD_OPCODE           0x6
+#define INT_VECTOR_COPR_NOT_AVAIL            0x7
+#define INT_VECTOR_DOUBLE_FAULT              0x8
+#define INT_VECTOR_COPR_SEG_OVERRUN          0x9
+#define INT_VECTOR_INVALID_TSS               0xA
+#define INT_VECTOR_SEG_NOT_PRESENT           0xB
+#define INT_VECTOR_STACK_FAULT               0xC
+#define INT_VECTOR_GERNERAL_PROTECT_FAULT    0xD
+#define INT_VECTOR_PAGE_FAULT                0xE
+#define INT_VECTOR_RESERVED                  0xF
+#define INT_VECTOR_MATH_FAULT                0x10
+#define INT_VECTOR_ALIGN_CHECK               0x11
+#define INT_VECTOR_MACHINE_CHECK             0x12
+#define INT_VECTOR_SIMD_FLOAT_POINT_EXECPT   0x13
 
 void     division_by_error_exception();
 void     debugger_exception();
