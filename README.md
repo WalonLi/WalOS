@@ -17,6 +17,38 @@ It's a small x86 OS.
 [Executable and Linkable Format (ELF) document](http://flint.cs.yale.edu/cs422/doc/ELF_Format.pdf)
 
 ----
+#####Current Flow(6/11)
+```
+            -------------------------------------------------------
+BootSector  |       Boot to BootSector
+            |
+            |       Load loader
+Loader      |       Jump to loader
+            |       
+            |       Load kernel
+Kernel      |       Jump to kernel
+            |   
+            |       Initial and switch to kernel GDT 
+            |       
+            |       Initial hardware interrupt controller(8259A)
+            |       Initial software interrupt(system call)
+            |       Initial IDT
+            |       Initial TSS and LDT descriptor in GDT.
+            |       
+            |
+            |
+            |       Initial Process Table
+            |       Initial Clock interrupt
+            |       
+            |       Process start...
+            |       A, B and C start around
+            |       In A process, I demo a simple system call to get current tick.
+            -------------------------------------------------------
+```
+
+
+
+----
 
 #####Memory Layout(5/17)
 ```
