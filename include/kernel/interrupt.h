@@ -23,6 +23,18 @@ typedef void (*irq_handler)(int irq) ;
 #define INT_VECTOR_IRQ0     0x20
 #define INT_VECTOR_IRQ8     0x28
 
+#define IRQ_CLOCK           0x0
+#define IRQ_KEYBOARD        0x1
+#define IRQ_M_TO_S          0x2 // Master to Slaver
+#define IRQ_SECOND_SERIAL   0x3
+#define IRQ_FIRST_SERAIL    0x4
+#define IRQ_XT              0x5
+#define IRQ_FLOPPY          0x6
+#define IRQ_PRINTER         0x7
+#define IRQ_RT_CLOCK        0x8
+#define IRQ_S_TO_M          0x9
+#define IRQ_FPU             0xd
+#define IRQ_AT              0xe
 
 #define IRQ_CNT             16
 
@@ -57,6 +69,7 @@ void    clock_int_handler(int irq) ;
 
 
 // SOFTWARE
+#define SYS_CALL_TBL_CNT    1
 #define INT_VECTOR_SYS_CALL 0x90
 void    sys_call() ;
 int     sys_get_ticks() ;

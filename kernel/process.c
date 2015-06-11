@@ -52,8 +52,8 @@ void init_process_main()
     }
 
 
-    set_irq_handler(0, clock_int_handler) ;
-    enable_irq(0) ;
+    set_irq_handler(IRQ_CLOCK, clock_int_handler) ;
+    enable_irq(IRQ_CLOCK) ;
 
     //char buf[50] ;
     //show_msg(itoa_base((int)irq_table[0], buf, 16)) ;
