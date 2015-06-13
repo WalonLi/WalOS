@@ -24,10 +24,12 @@ char        task_stack[STACK_SIZE] ;
 extern void process_A() ;
 extern void process_B() ;
 extern void process_C() ;
+/*
 TASK        task_table[TASK_CNT] = { {process_A, STACK_SIZE_PROC_A, "P_A"},
                                      {process_B, STACK_SIZE_PROC_B, "P_B"},
                                      {process_C, STACK_SIZE_PROC_C, "P_C"} } ;
-
+*/
+TASK        task_table[TASK_CNT] = { {process_A, STACK_SIZE_PROC_A, "P_A"}} ;
 int         hw_int_cnt = 0 ;
 irq_handler irq_table[IRQ_CNT];
 

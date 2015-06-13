@@ -38,6 +38,15 @@ typedef void (*irq_handler)(int irq) ;
 
 #define IRQ_CNT             16
 
+
+// Timer control
+#define TIMER0          0x40 // channel 0
+#define TIMER_MODE      0x43 // timer mode control
+#define TIMER_RATE_GEN  0x34 // 00 11 010 0
+#define TIMER_FREQ      1193182L
+#define TIMER_HZ        100
+void init_8253_pit() ;
+
 // master 8259 controller
 void    hw_int00() ; // clock
 void    hw_int01() ; // keyboard

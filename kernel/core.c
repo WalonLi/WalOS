@@ -66,13 +66,13 @@ void init_tss()
     tss.iobase = sizeof(tss) ;
 }
 
+
 void init_pm_env()
 {
     // adjust position
     for (int x = 0 ; x < 13 ; ++x) show_msg("\n") ;
 
     show_msg("C code start...\n") ;
-
     show_msg("Prepare GDT\n") ;
 
     // show_msg(itoa(a, s)) ;

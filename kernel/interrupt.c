@@ -42,6 +42,20 @@ void init_8259a()
     }
 }
 
+// PIT Programmable Interval timer
+void init_8253_pit()
+{
+    // because bochs does't have realtime clock, so it's invalid.
+    outb(TIMER_RATE_GEN, TIMER_MODE) ;
+    outb((uint8_t)(TIMER_FREQ/TIMER_HZ), TIMER0) ;
+    outb((uint8_t)((TIMER_FREQ/TIMER_HZ) >> 8), TIMER0) ;
+
+    // fuck register... outb(value, port)
+//    outb(TIMER_MODE, TIMER_RATE_GEN) ;
+//    outb(TIMER0, (uint8_t)(TIMER_FREQ/TIMER_HZ)) ;
+//    outb(TIMER0, (uint8_t)((TIMER_FREQ/TIMER_HZ) >> 8)) ;
+}
+
 void init_hw_interrupt_idt()
 {
     init_idt_desc(INT_VECTOR_IRQ0 + 0, DA_386IGate, hw_int00, PRI_KRNL) ;
@@ -80,12 +94,12 @@ void set_irq_handler(int irq, irq_handler handler)
 // clock interrupt
 void clock_int_handler(int irq)
 {
-    show_msg("#") ;
+    //show_msg("#") ;
     ticks++ ;
 
     if (hw_int_cnt != 0)
     {
-        show_msg("!") ;
+        //show_msg("!") ;
         return  ;
     }
 

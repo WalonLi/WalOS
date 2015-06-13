@@ -38,6 +38,7 @@ StackTop:
 _start:
     mov     $StackTop,   %esp
     sgdtw   gdt_ptr
+
     call    init_pm_env
 
     # load gdt, idt, tss

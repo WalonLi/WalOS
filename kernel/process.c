@@ -51,7 +51,11 @@ void init_process_main()
         selector_ldt += (1 << 3) ;
     }
 
+    process_ready = proc_table ;
+    hw_int_cnt = 0 ;
+    ticks = 0 ;
 
+    init_8253_pit() ;
     set_irq_handler(IRQ_CLOCK, clock_int_handler) ;
     enable_irq(IRQ_CLOCK) ;
 
@@ -60,11 +64,6 @@ void init_process_main()
     //show_msg("+") ;
     //show_msg(itoa_base((int)clock_int_handler, buf, 16)) ;
 
-
-
-    process_ready = proc_table ;
-    hw_int_cnt = 0 ;
-    ticks = 0 ;
     restart_process() ;
     while(1) ;
 }
@@ -72,14 +71,14 @@ void init_process_main()
 extern int get_ticks() ;
 void process_A()
 {
-    //volatile int i = 0 ;
+    // volatile int i = 0 ;
     while (true)
     {
         char buf[10] = { 0 };
         show_msg("A") ;
         show_msg(itoa(get_ticks(), buf)) ;
         show_msg(".") ;
-        delay(5) ;
+        delay(1000) ;
     }
 }
 
@@ -92,7 +91,7 @@ void process_B()
         show_msg("B") ;
         show_msg(itoa(i++, buf)) ;
         show_msg(".") ;
-        delay(5) ;
+        delay(1) ;
     }
 }
 
@@ -105,6 +104,6 @@ void process_C()
         show_msg("C") ;
         show_msg(itoa(i++, buf)) ;
         show_msg(".") ;
-        delay(5) ;
+        delay(1) ;
     }
 }

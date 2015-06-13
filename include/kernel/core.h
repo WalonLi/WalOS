@@ -11,6 +11,8 @@
 //#include "kernel/interrupt.h"
 //#include "kernel/process.h"
 
+// This Token to control Bochs or Real machine
+#define REAL_MACHINE 1
 
 typedef void (*interrupt_handler)() ;
 
@@ -91,7 +93,6 @@ typedef struct _TSS
 #define SELECTOR_KERNEL_CS  SELECTOR_FLAT_C
 #define SELECTOR_KERNEL_DS  SELECTOR_FLAT_RW
 #define SELECTOR_KERNEL_GS  SELECTOR_VIDEO
-
 
 
 #define vir2phys(seg_base, vir) (uint32_t)(((uint32_t)seg_base) + (uint32_t)(vir))

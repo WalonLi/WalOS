@@ -102,7 +102,6 @@ _save_1:
     hlt
 .endm
 
-.align 16
 .macro hw_int_master num
     call    _save
     # stop clock interrupt
@@ -118,10 +117,10 @@ _save_1:
 
     mov     $\num,  %esi
     call    *irq_table(, %esi, 4)   # irq_table[%esi]
-    pop     %ecx
+    popl     %ecx
     cli
 
-    # stop clock interrupt
+    # resum clock interrupt
     in      $INT_M_CTRL_MASK, %al
     and     $~(1 << \num),  %al
     out     %al,    $INT_M_CTRL_MASK
@@ -129,56 +128,54 @@ _save_1:
     ret
 .endm
 
-
-.align 16
+.align 2
 hw_int00:
-    #master_8259     0
-    hw_int_master   0
+    hw_int_master 0
 
 hw_int01:
-    master_8259     1
+    hw_int_master 1
 
 hw_int02:
-    master_8259     2
+    hw_int_master 2
 
 hw_int03:
-    master_8259     3
+    hw_int_master 3
 
 hw_int04:
-    master_8259     4
+    hw_int_master 4
 
 hw_int05:
-    master_8259     5
+    hw_int_master 5
 
 hw_int06:
-    master_8259     6
+    hw_int_master 6
 
 hw_int07:
-    master_8259     7
+    hw_int_master 7
 
 hw_int08:
-    slaver_8259     8
+    slaver_8259 8
 
 hw_int09:
-    slaver_8259     9
+    slaver_8259 9
 
 hw_int10:
-    slaver_8259     10
+    slaver_8259 10
 
 hw_int11:
-    slaver_8259     11
+    slaver_8259 11
 
 hw_int12:
-    slaver_8259     12
+    slaver_8259 12
 
 hw_int13:
-    slaver_8259     13
+    slaver_8259 13
 
 hw_int14:
-    slaver_8259     14
+    slaver_8259 14
 
 hw_int15:
-    slaver_8259     15
+    slaver_8259 15
 
 
 disable_irq:

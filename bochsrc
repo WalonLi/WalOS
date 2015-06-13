@@ -21,3 +21,8 @@ log: bochsout.txt
 mouse: enabled=0
 
 keyboard_mapping: enabled=1, map=/usr/share/bochs/keymaps/x11-pc-us.map
+
+
+#fix bochs clock bug
+#clock:sync=slowdown, time0=315529200
+

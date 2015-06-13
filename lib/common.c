@@ -97,11 +97,21 @@ char *itoa_base(int value, char *dest, int radix)
     return dest ;
 }
 
+#define HZ 100
+int get_ticks() ;
 
-
-void delay(int time)
+// milli second
+void delay(int milli)
 {
-    for (int i = 0 ; i  < time ; i++)
-      for (volatile int j = 0 ; j < 10000 ; j++ )
-        ;
+    int t = get_ticks() ;
+    while(((get_ticks()-t) * 1000 / HZ) < milli) ;
+    /*
+    for (volatile int i = 0 ; i  < time ; i++)
+        for (volatile int k = 0 ; k < 10 ; k++)
+            for (volatile int j = 0 ; j < 10000 ; j++ ) ;
+    */
 }
+
+
+
+

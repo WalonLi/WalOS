@@ -49,12 +49,14 @@ typedef struct _TASK
     char            name[32] ;
 } TASK ;
 
-#define TASK_CNT            3
+
+//#define TASK_CNT            3
+#define TASK_CNT            1
 #define STACK_SIZE_PROC_A   0x8000
 #define STACK_SIZE_PROC_B   0x8000
 #define STACK_SIZE_PROC_C   0x8000
-#define STACK_SIZE          STACK_SIZE_PROC_A + STACK_SIZE_PROC_B + STACK_SIZE_PROC_C
-
+//#define STACK_SIZE          STACK_SIZE_PROC_A + STACK_SIZE_PROC_B + STACK_SIZE_PROC_C
+#define STACK_SIZE          STACK_SIZE_PROC_A
 
 void init_process_main() ;
 void restart_process() ;
