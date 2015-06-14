@@ -12,7 +12,7 @@
 .extern     process_ready
 .extern     show_msg
 .extern     delay
-.extern     hw_int_cnt
+.extern     int_reenter
 .extern     sys_call_table
 .extern     irq_table
 .extern     tss
@@ -53,7 +53,7 @@ restart_process:
     lea     PROC_STACK_TOP(%esp), %eax
     movl    %eax,       (tss + TSS_ESP0)
 restart_re_enter:
-    decl    hw_int_cnt
+    decl    int_reenter
     pop     %gs
     pop     %fs
     pop     %es
@@ -74,8 +74,8 @@ _save:
 
     mov     %esp,   %esi
 
-    incl    hw_int_cnt
-    cmpl    $0,     hw_int_cnt
+    incl    int_reenter
+    cmpl    $0,     int_reenter
     jne     _save_1
 
     mov     $StackTop,   %esp

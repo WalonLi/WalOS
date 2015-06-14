@@ -96,18 +96,21 @@ void clock_int_handler(int irq)
 {
     //show_msg("#") ;
     ticks++ ;
+    process_ready->ticks-- ;
 
-    if (hw_int_cnt != 0)
+    if (int_reenter != 0)
     {
-        //show_msg("!") ;
+        //char buf[10] = {0} ;
+        //show_msg(itoa(int_reenter, buf)) ;
         return  ;
     }
 
-    process_ready++ ;
-    if (process_ready >= proc_table + TASK_CNT)
+    if (process_ready->ticks > 0)
     {
-        process_ready = proc_table ;
+        return ;
     }
+
+    process_schedule() ;
 }
 
 

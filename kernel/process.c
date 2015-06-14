@@ -51,8 +51,13 @@ void init_process_main()
         selector_ldt += (1 << 3) ;
     }
 
+    proc_table[0].ticks = proc_table[0].priority = 15 ;
+    proc_table[1].ticks = proc_table[1].priority = 5 ;
+    proc_table[2].ticks = proc_table[2].priority = 3 ;
+
+
     process_ready = proc_table ;
-    hw_int_cnt = 0 ;
+    int_reenter = 0 ;
     ticks = 0 ;
 
     init_8253_pit() ;
@@ -68,42 +73,56 @@ void init_process_main()
     while(1) ;
 }
 
+
+void process_schedule()
+{
+    int biggest_tick = 0 ;
+    while(!biggest_tick)
+    {
+        for (PROCESS *p = proc_table ; p < proc_table+TASK_CNT ; ++p)
+        {
+            if (p->ticks > biggest_tick)
+            {
+                biggest_tick = p->ticks ;
+                process_ready = p ;
+            }
+        }
+
+        if (!biggest_tick)
+        {
+            for (PROCESS *p = proc_table ; p < proc_table + TASK_CNT ;++p)
+            {
+                p->ticks = p->priority ;
+            }
+        }
+    }
+}
+
+
 extern int get_ticks() ;
 void process_A()
 {
-    // volatile int i = 0 ;
     while (true)
     {
-        char buf[10] = { 0 };
-        show_msg("A") ;
-        show_msg(itoa(get_ticks(), buf)) ;
-        show_msg(".") ;
-        delay(1000) ;
+        show_msg("A.") ;
+        delay(10) ;
     }
 }
 
 void process_B()
 {
-    volatile int i = 0x1000 ;
     while (true)
     {
-        char buf[10] = { 0 };
-        show_msg("B") ;
-        show_msg(itoa(i++, buf)) ;
-        show_msg(".") ;
-        delay(1) ;
+        show_msg("B.") ;
+        delay(10) ;
     }
 }
 
 void process_C()
 {
-    volatile int i = 0x2000 ;
     while (true)
     {
-        char buf[10] = { 0 };
-        show_msg("C") ;
-        show_msg(itoa(i++, buf)) ;
-        show_msg(".") ;
-        delay(1) ;
+        show_msg("C.") ;
+        delay(10) ;
     }
 }

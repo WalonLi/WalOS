@@ -18,7 +18,6 @@
 
 .extern     process_ready
 .extern     tss
-.extern     hw_int_cnt
 
 
 .bss

@@ -27,7 +27,7 @@ extern char         task_stack[STACK_SIZE] ;
 
 extern TASK         task_table[TASK_CNT] ;
 
-extern int          hw_int_cnt ;
+extern int          int_reenter ;
 
 extern irq_handler  irq_table[IRQ_CNT];
 
