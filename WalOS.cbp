@@ -48,10 +48,14 @@
 		<Unit filename="include/kernel/global.h" />
 		<Unit filename="include/kernel/interrupt.h" />
 		<Unit filename="include/kernel/io.h" />
+		<Unit filename="include/kernel/keyboard.h" />
 		<Unit filename="include/kernel/process.h" />
 		<Unit filename="include/lib/common.h" />
 		<Unit filename="include/lib/string.h" />
 		<Unit filename="include/type.h" />
+		<Unit filename="kernel/console.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="kernel/core.c">
 			<Option compilerVar="CC" />
 		</Unit>

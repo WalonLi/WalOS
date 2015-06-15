@@ -54,7 +54,7 @@ typedef struct _TASK
 
 #define TASK_CNT            4
 //#define TASK_CNT            1
-#deifne STACK_SIZE_CONSOLE  0x8000
+#define STACK_SIZE_CONSOLE  0x8000
 #define STACK_SIZE_PROC_A   0x8000
 #define STACK_SIZE_PROC_B   0x8000
 #define STACK_SIZE_PROC_C   0x8000

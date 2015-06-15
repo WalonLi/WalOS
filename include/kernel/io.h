@@ -17,7 +17,7 @@ static inline void out##bwl(unsigned type value, int port)              \
 static inline unsigned type in##bwl(int port)                           \
 {                                                                       \
     unsigned type value;                                                \
-    __asm__ volatile("in" #bwl " %w1, %" #bw ""                         \
+    __asm__ volatile("in" #bwl " %w1, %" #bw "0"                         \
                  : "=a"(value) : "Nd"(port));                           \
     __asm__ volatile("nop ;\n nop ;\n nop ;") ;                             \
     return value;                                                       \

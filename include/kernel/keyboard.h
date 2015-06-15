@@ -273,12 +273,12 @@ uint32_t keymap[NR_SCAN_CODES * MAP_COLS] = {
 };
 
 
-typedef struct _KB_INPUT 
+typedef struct _KB_INPUT
 {
     char    *head ;
     char    *tail ;
     int     count ;
-    char    buf[KB_IN_BYTES] ;
+    char    buf[KB_IN_BUF_LENGTH] ;
 } KB_INPUT;
 
 #endif

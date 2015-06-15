@@ -97,7 +97,7 @@ void set_irq_handler(int irq, irq_handler handler)
 void init_clock()
 {
     init_8253_pit() ; // adjust timer to 10 HZ
-    
+
     set_irq_handler(IRQ_CLOCK, clock_int_handler) ;
     enable_irq(IRQ_CLOCK) ;
 }
@@ -129,42 +129,42 @@ void init_keyboard()
 {
     kb_in.count = 0 ;
     kb_in.head = kb_in.tail = kb_in.buf ;
-    
+
     set_irq_handler(IRQ_KEYBOARD, keyboard_int_handler) ;
     enable_irq(IRQ_KEYBOARD) ;
 }
 
 // keyboard interrupt
 void keyboard_int_handler(int irq)
-{  
+{
     uint8_t scan_code = inb(0x60) ;
-    
+
     if (kb_in.count < KB_IN_BUF_LENGTH)
     {
         *(kb_in.head++) = scan_code ;
 
         if (kb_in.head == kb_in.buf + KB_IN_BUF_LENGTH)
         {
-            kb_in.head = kb_in.buf ; // reset 
+            kb_in.head = kb_in.buf ; // reset
         }
         kb_in.count++ ;
     }
 }
 
-void read_keyboard() 
+void read_keyboard()
 {
     if (kb_in.count)
     {
         __asm__ volatile("cli");
-        
+
         uint8_t scan_code = *(kb_in.tail++) ;
         if (kb_in.tail == kb_in.buf + KB_IN_BUF_LENGTH)
         {
-            kb_in.tail = kb_in.buf ; // reset 
+            kb_in.tail = kb_in.buf ; // reset
         }
-        kb_in.count++ ;
+        kb_in.count-- ;
         __asm__ volatile("sti");
-        
+
         char buf[10] = { 0 } ;
         show_msg(itoa_base(scan_code, buf, 16)) ;
     }

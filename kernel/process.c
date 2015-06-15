@@ -60,7 +60,7 @@ void init_process_main()
     int_reenter = 0 ;
     ticks = 0 ;
 
-    
+
     init_clock() ;
 
     init_keyboard() ;
@@ -100,7 +100,7 @@ void process_A()
 {
     while (true)
     {
-        show_msg("A.") ;
+        //show_msg("A.") ;
         delay(10) ;
     }
 }
@@ -109,7 +109,7 @@ void process_B()
 {
     while (true)
     {
-        show_msg("B.") ;
+        //show_msg("B.") ;
         delay(10) ;
     }
 }
@@ -118,7 +118,7 @@ void process_C()
 {
     while (true)
     {
-        show_msg("C.") ;
+        //show_msg("C.") ;
         delay(10) ;
     }
 }
