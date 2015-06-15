@@ -74,8 +74,11 @@ void    init_8259a() ;
 void    init_hw_interrupt_idt() ;
 void    dummy_irq_handler(int irq) ;
 void    set_irq_handler(int irq, irq_handler handler) ;
+void    init_clock() ;
 void    clock_int_handler(int irq) ;
-
+void    init_keyboard() ;
+void    keyboard_int_handler(int irq) ;
+void    read_keyboard() ;
 
 // SOFTWARE
 #define SYS_CALL_TBL_CNT    1

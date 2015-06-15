@@ -60,14 +60,10 @@ void init_process_main()
     int_reenter = 0 ;
     ticks = 0 ;
 
-    init_8253_pit() ;
-    set_irq_handler(IRQ_CLOCK, clock_int_handler) ;
-    enable_irq(IRQ_CLOCK) ;
+    
+    init_clock() ;
 
-    //char buf[50] ;
-    //show_msg(itoa_base((int)irq_table[0], buf, 16)) ;
-    //show_msg("+") ;
-    //show_msg(itoa_base((int)clock_int_handler, buf, 16)) ;
+    init_keyboard() ;
 
     restart_process() ;
     while(1) ;

@@ -21,11 +21,13 @@ PROCESS     proc_table[TASK_CNT] ;
 char        task_stack[STACK_SIZE] ;
 
 // Task table
+extern void console_task() ;
 extern void process_A() ;
 extern void process_B() ;
 extern void process_C() ;
 
-TASK        task_table[TASK_CNT] = { {process_A, STACK_SIZE_PROC_A, "P_A"},
+TASK        task_table[TASK_CNT] = { {console_task, STACK_SIZE_CONSOLE, "console"},
+                                     {process_A, STACK_SIZE_PROC_A, "P_A"},
                                      {process_B, STACK_SIZE_PROC_B, "P_B"},
                                      {process_C, STACK_SIZE_PROC_C, "P_C"} } ;
 
