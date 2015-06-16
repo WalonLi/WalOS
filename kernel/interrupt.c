@@ -153,6 +153,18 @@ void keyboard_int_handler(int irq)
 
 void read_keyboard()
 {
+    static bool code_e0 = false ;
+    static bool l_shift = false ;
+    static bool r_shift = false ;
+    static bool l_alt = false ;
+    static bool r_alt = false ;
+    static bool l_ctrl = false ;
+    static bool r_ctrl = false ;
+    static bool caps_lock = false ;
+    static bool num_lock = false ;
+    static bool scroll_lock = false ;
+
+
     if (kb_in.count)
     {
         __asm__ volatile("cli");
@@ -165,8 +177,73 @@ void read_keyboard()
         kb_in.count-- ;
         __asm__ volatile("sti");
 
-        char buf[10] = { 0 } ;
-        show_msg(itoa_base(scan_code, buf, 16)) ;
+
+        if (scan_code == 0xe1)
+        {
+
+        }
+        else if (scan_code == 0xe0)
+        {
+
+        }
+        else
+        {
+            // handle make code and break code
+            bool is_make = (scan_code & FLAG_BREAK) ? false : true ;
+
+            uint32_t *row = &key_map[(scan_code & 0x7f) * MAP_COLS] ;
+
+            uint8_t col = 0 ;
+            if (l_shift || r_shift) col = 1 ;
+            if (code_e0)
+            {
+                col = 2 ;
+                code_e0 = false ;
+            }
+
+            // get key by row and col
+            uint32_t key = row[col] ;
+
+            switch key
+            {
+            case SHIFT_L:
+                l_shift = is_make ;
+                key = 0 ;
+                break ;
+            case SHIFT_R:
+                r_shift = is_make ;
+                key = 0 ;
+                break ;
+            case CTRL_L:
+                l_ctrl = is_make ;
+                key = 0 ;
+                break ;
+            case CTRL_R:
+                r_ctrl = is_make ;
+                key = 0 ;
+                break ;
+            case ALT_L:
+                l_alt = is_make ;
+                key = 0 ;
+                break ;
+            case ALT_R:
+                r_alt = is_make ;
+                key = 0 ;
+                break ;
+            default:
+                if(!is_make) key = 0 ;
+                break ;
+            }
+
+            if (key)
+            {
+                char output[2] = {0};
+                output[0] = key_map[(scan_code & 0x7f) * MAP_COLS] ;
+                show_msg(output) ;
+            }
+        }
+        // char buf[10] = { 0 } ;
+        // show_msg(itoa_base(scan_code, buf, 16)) ;
     }
 }
 
