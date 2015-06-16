@@ -151,6 +151,34 @@ void keyboard_int_handler(int irq)
     }
 }
 
+uint8_t get_byte_from_kb_buf()
+{
+    while (!kb_in.count) ; // wait next keystroke
+
+    __asm__ volatile("cli");
+
+    uint8_t scan_code = *(kb_in.tail++) ;
+    if (kb_in.tail == kb_in.buf + KB_IN_BUF_LENGTH)
+    {
+        kb_in.tail = kb_in.buf ; // reset
+    }
+    kb_in.count-- ;
+    __asm__ volatile("sti");
+
+    return scan_code ;
+}
+
+void print_key(uint32_t k)
+{
+    // if FLAG_EXT is set, don't show this character
+    if (!(k & FLAG_EXT))
+    {
+        char output[2] = {0} ;
+        output[0] = k & 0xff ;
+        show_msg(output) ;
+    }
+}
+
 void read_keyboard()
 {
     static bool code_e0 = false ;
@@ -160,41 +188,76 @@ void read_keyboard()
     static bool r_alt = false ;
     static bool l_ctrl = false ;
     static bool r_ctrl = false ;
-    static bool caps_lock = false ;
-    static bool num_lock = false ;
-    static bool scroll_lock = false ;
+    //static bool caps_lock = false ;
+    //static bool num_lock = false ;
+    //static bool scroll_lock = false ;
 
 
     if (kb_in.count)
     {
-        __asm__ volatile("cli");
+        uint32_t key = 0 ;
+        bool is_make = false;
 
-        uint8_t scan_code = *(kb_in.tail++) ;
-        if (kb_in.tail == kb_in.buf + KB_IN_BUF_LENGTH)
-        {
-            kb_in.tail = kb_in.buf ; // reset
-        }
-        kb_in.count-- ;
-        __asm__ volatile("sti");
+        code_e0 = false ;
 
+        uint8_t scan_code = get_byte_from_kb_buf() ;
 
+        // handle special key code at first.
         if (scan_code == 0xe1)
         {
+            // handle pause/break key code
+            key = PAUSEBREAK ;
+            uint8_t pause_key_code[] = {0xe1, 0x1d, 0x45, 0xe1, 0x9d, 0xc5} ;
 
+            for (int x = 1 ; x < 6 ; ++x)
+            {
+                if (pause_key_code[x] != get_byte_from_kb_buf())
+                {
+                    key = 0 ;
+                    break ;
+                }
+            }
         }
         else if (scan_code == 0xe0)
         {
+            // handle 0xe0 key code
+            scan_code = get_byte_from_kb_buf() ;
 
+            // PrintScreen press
+            if (scan_code == 0x2a)
+                if (get_byte_from_kb_buf() == 0xe0)
+                    if (get_byte_from_kb_buf() == 0x37)
+                    {
+                        key = PRINTSCREEN ;
+                        is_make = true ;
+                    }
+
+            // PrintScreen release
+            if (scan_code == 0xb7)
+                if (get_byte_from_kb_buf() == 0xe0)
+                    if (get_byte_from_kb_buf() == 0xaa)
+                    {
+                        key = PRINTSCREEN ;
+                        is_make = false ;
+                    }
+            // if key does not have value, code_e0 flag set true
+            if (!key) code_e0 = true ;
         }
-        else
+
+        // handle normal key
+        if (!key)
         {
             // handle make code and break code
-            bool is_make = (scan_code & FLAG_BREAK) ? false : true ;
+            is_make = (scan_code & FLAG_BREAK) ? false : true ;
 
             uint32_t *row = &key_map[(scan_code & 0x7f) * MAP_COLS] ;
 
             uint8_t col = 0 ;
+
             if (l_shift || r_shift) col = 1 ;
+            if (l_ctrl || r_ctrl) ;
+            if (l_alt || r_alt) ;
+
             if (code_e0)
             {
                 col = 2 ;
@@ -202,48 +265,45 @@ void read_keyboard()
             }
 
             // get key by row and col
-            uint32_t key = row[col] ;
+            key = row[col] ;
 
-            switch key
+            switch (key)
             {
             case SHIFT_L:
                 l_shift = is_make ;
-                key = 0 ;
                 break ;
             case SHIFT_R:
                 r_shift = is_make ;
-                key = 0 ;
                 break ;
             case CTRL_L:
                 l_ctrl = is_make ;
-                key = 0 ;
                 break ;
             case CTRL_R:
                 r_ctrl = is_make ;
-                key = 0 ;
                 break ;
             case ALT_L:
                 l_alt = is_make ;
-                key = 0 ;
                 break ;
             case ALT_R:
                 r_alt = is_make ;
-                key = 0 ;
                 break ;
             default:
-                if(!is_make) key = 0 ;
+                //if(!is_make) key = 0 ;
                 break ;
             }
 
-            if (key)
+            if (is_make)
             {
-                char output[2] = {0};
-                output[0] = key_map[(scan_code & 0x7f) * MAP_COLS] ;
-                show_msg(output) ;
+                key |= (l_shift) ? FLAG_SHIFT_L : 0 ;
+                key |= (r_shift) ? FLAG_SHIFT_R : 0 ;
+                key |= (l_ctrl) ? FLAG_CTRL_L : 0 ;
+                key |= (r_ctrl) ? FLAG_CTRL_R : 0 ;
+                key |= (l_alt) ? FLAG_ALT_L : 0 ;
+                key |= (r_alt) ? FLAG_ALT_R : 0 ;
+
+                print_key(key) ;
             }
         }
-        // char buf[10] = { 0 } ;
-        // show_msg(itoa_base(scan_code, buf, 16)) ;
     }
 }
 
