@@ -8,6 +8,7 @@
 #include "kernel/global.h"
 #include "kernel/keyboard.h"
 #include "kernel/vga.h"
+#include "kernel/console.h"
 #include "lib/common.h"
 
 static KB_INPUT kb_in ;
@@ -152,7 +153,7 @@ void keyboard_int_handler(int irq)
     }
 }
 
-uint8_t get_byte_from_kb_buf()
+static uint8_t get_byte_from_kb_buf()
 {
     while (!kb_in.count) ; // wait next keystroke
 
@@ -169,51 +170,7 @@ uint8_t get_byte_from_kb_buf()
     return scan_code ;
 }
 
-void print_key(uint32_t k)
-{
-    // if FLAG_EXT is set, don't show this character
-    if (!(k & FLAG_EXT))
-    {
-        char output[2] = {0} ;
-        output[0] = k & 0xff ;
-        show_msg(output) ;
-
-        // adjust cursor
-        __asm__ volatile("cli");
-        outb(CLHR_INDEX, CRTCR_AR) ;
-        outb(((position/2)>>8) & 0xff, CRTCR_DR) ;
-        outb(CLLR_INDEX, CRTCR_AR) ;
-        outb((position/2) & 0xff, CRTCR_DR) ;
-        __asm__ volatile("sti");
-    }
-    else
-    {
-        uint32_t raw_code = k & MASK_RAW ;
-
-        // try to implement move one line ;
-        if (raw_code == UP)
-        {
-            // shift + up arrow
-            if ((k & FLAG_SHIFT_L) || (k & FLAG_SHIFT_R))
-            {
-                __asm__ volatile("cli");
-                outb(CLHR_INDEX, SAHR_INDEX) ;
-                outb(((80*15)>>8) & 0xff, CRTCR_DR) ;
-                outb(CLLR_INDEX, SALR_INDEX) ;
-                outb((80*15) & 0xff, CRTCR_DR) ;
-                __asm__ volatile("sti");
-            }
-        }
-        else if (raw_code == DOWN)
-        {
-            if ((k & FLAG_SHIFT_L) || (k & FLAG_SHIFT_R))
-            {
-            }
-        }
-    }
-}
-
-void read_keyboard()
+void read_keyboard(CONSOLE con)
 {
     static bool code_e0 = false ;
     static bool l_shift = false ;
@@ -335,7 +292,7 @@ void read_keyboard()
                 key |= (l_alt) ? FLAG_ALT_L : 0 ;
                 key |= (r_alt) ? FLAG_ALT_R : 0 ;
 
-                print_key(key) ;
+                store_key_into_console(con, key) ;
             }
         }
     }

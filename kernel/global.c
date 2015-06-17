@@ -5,6 +5,7 @@
 
 #include "kernel/global.h"
 
+
 // global
 uint8_t     gdt_ptr[6]; // 0-15:Limit  16-47:Base
 DESCRIPTOR  gdt[GDT_SIZE];
