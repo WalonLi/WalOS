@@ -4,6 +4,10 @@
 **/
 
 #include "kernel/interrupt.h"
+#include "kernel/io.h"
+#include "kernel/global.h"
+
+
 void console_task()
 {
     while(true)

@@ -50,6 +50,7 @@
 		<Unit filename="include/kernel/io.h" />
 		<Unit filename="include/kernel/keyboard.h" />
 		<Unit filename="include/kernel/process.h" />
+		<Unit filename="include/kernel/vga.h" />
 		<Unit filename="include/lib/common.h" />
 		<Unit filename="include/lib/string.h" />
 		<Unit filename="include/type.h" />
