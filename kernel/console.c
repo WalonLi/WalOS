@@ -97,6 +97,19 @@ static void console_write_key(CONSOLE con)
     }
 }
 
+static void scroll_console(CONSOLE con, int direction)
+{
+    if (direction > 0)
+        if (con.vga_start_addr > con.vga_mem_start)
+            con.vga_start_addr -= (direction * TEXT_MODE_WIDTH)
+    else if (direction < 0)
+        if ((con.vga_start_addr + TEXT_MODE_SIZE) < con.vga_mem_end)
+            con.vga_start_addr += (direction * TEXT_MODE_WIDTH)
+
+    set_start_address(con.vga_start_addr) ;
+    set_cursor(con.cursor_pos) ;
+}
+
 // public function
 void console_task()
 {
@@ -143,19 +156,11 @@ void store_key_into_console(CONSOLE con, uint32_t key)
         case UP:
             // shift + up arrow
             if ((key & FLAG_SHIFT_L) || (key & FLAG_SHIFT_R))
-            {
-                __asm__ volatile("cli");
-                outb(SAHR_INDEX, CRTCR_AR) ;
-                outb(((80*15)>>8) & 0xff, CRTCR_DR) ;
-                outb(SALR_INDEX, CRTCR_AR) ;
-                outb((80*15) & 0xff, CRTCR_DR) ;
-                __asm__ volatile("sti");
-            }
+                scroll_console(con, 1) ;
             break ;
         case DOWN:
             if ((key & FLAG_SHIFT_L) || (key & FLAG_SHIFT_R))
-            {
-            }
+                scroll_console(con, -1) ;
             break ;
         case F1:
         case F2:

@@ -9,6 +9,9 @@
 #define VGA_MEM_BASE 0xb8000
 #define VGA_MEM_SIZE 0x8000 // 32KB
 
+#define TEXT_MODE_WIDTH 80
+#define TEXT_MODE_SIZE  (80*25)
+
 // Gerneral Registers
 #define GR_MOR_READ     0x3cc
 #define GR_MOR_WRITE    0x3c2
