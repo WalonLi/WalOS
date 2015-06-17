@@ -19,7 +19,7 @@
 #define GR_ISR1_READ    0x3da
 #define GR_FCR_READ     0x3ca
 #define GR_FCR_WRITE    0x3da
-#defien GR_VSER         0x3c3
+#define GR_VSER         0x3c3
 
 // Sequence Registers
 #define SR_AR           0x3c4 // address

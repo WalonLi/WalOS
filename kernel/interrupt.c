@@ -170,7 +170,7 @@ static uint8_t get_byte_from_kb_buf()
     return scan_code ;
 }
 
-void read_keyboard(CONSOLE con)
+void read_keyboard(CONSOLE *con)
 {
     static bool code_e0 = false ;
     static bool l_shift = false ;

@@ -15,7 +15,7 @@
 
 typedef struct _CONSOLE
 {
-    uint32_t in_buf[CONSOLE_BUF_LENGTH] ;
+    char in_buf[CONSOLE_BUF_LENGTH] ;
     char *buf_head ;
     char *buf_tail ;
     int buf_count ;
@@ -27,5 +27,5 @@ typedef struct _CONSOLE
 } CONSOLE ;
 
 void console_task() ;
-void store_key_into_console(CONSOLE con, uint32_t key) ;
+void store_key_into_console(CONSOLE *con, uint32_t key) ;
 #endif // __CONSOLE_H__

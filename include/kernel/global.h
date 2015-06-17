@@ -9,6 +9,7 @@
 #include "kernel/core.h"
 #include "kernel/process.h"
 #include "kernel/interrupt.h"
+#include "kernel/keyboard.h"
 
 // global parameter
 extern uint8_t      gdt_ptr[6]; // 0-15:Limit  16-47:Base
@@ -34,4 +35,7 @@ extern irq_handler  irq_table[IRQ_CNT];
 extern void         *sys_call_table[1] ;
 
 extern int          ticks ;
+
+extern uint32_t     key_map[NR_SCAN_CODES * MAP_COLS] ;
+
 #endif
