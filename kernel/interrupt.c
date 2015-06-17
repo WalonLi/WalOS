@@ -197,9 +197,9 @@ void print_key(uint32_t k)
             if ((k & FLAG_SHIFT_L) || (k & FLAG_SHIFT_R))
             {
                 __asm__ volatile("cli");
-                outb(CLHR_INDEX, SAHR_INDEX) ;
+                outb(SAHR_INDEX, CRTCR_AR) ;
                 outb(((80*15)>>8) & 0xff, CRTCR_DR) ;
-                outb(CLLR_INDEX, SALR_INDEX) ;
+                outb(SALR_INDEX, CRTCR_AR) ;
                 outb((80*15) & 0xff, CRTCR_DR) ;
                 __asm__ volatile("sti");
             }
