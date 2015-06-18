@@ -34,10 +34,37 @@ static void set_start_address(uint32_t addr)
 static void print_character(CONSOLE *con, char c)
 {
     uint16_t *vmem_ptr = (uint16_t*)(VGA_MEM_BASE + (con->vga_start_addr*2) + (con->cursor_pos * 2)) ;
-    *vmem_ptr = c | (0x0f << 8) ; // white character
 
-    con->cursor_pos++ ;
+    switch (c)
+    {
+    case '\n' :
+        if (con->cursor_pos < con->vga_mem_end - TEXT_MODE_WIDTH)
+        {
+            con->cursor_pos = con->vga_mem_start
+                              + (TEXT_MODE_WIDTH * ((con->cursor_pos - con->vga_mem_start)
+                                                   / TEXT_MODE_WIDTH + 1)) ;
+        }
+        break ;
+    case '\b' :
+        if (con->cursor_pos > con->vga_mem_start)
+        {
+            con->cursor_pos-- ;
+            *(vmem_ptr-1) = ' ' | (0x0f << 8) ;
+        }
+        break ;
+    default:
+        if (con->cursor_pos < con->vga_mem_end - 1)
+        {
+            *vmem_ptr = c | (0x0f << 8) ; // white character
+            con->cursor_pos++ ;
+        }
+    }
+
+    while (con->cursor_pos >= con->vga_start_addr + TEXT_MODE_WIDTH)
+        scroll_console(con, 1) ;
+
     set_cursor(con->cursor_pos) ;
+    set_start_address(con->vga_start_addr) ;
 }
 
 static void init_consoles()
@@ -105,16 +132,29 @@ static void scroll_console(CONSOLE *con, int direction)
     if (direction > 0)
     {
         if (con->vga_start_addr > con->vga_mem_start)
-            con->vga_start_addr -= (direction * TEXT_MODE_WIDTH) ;
+            con->vga_start_addr += (direction * TEXT_MODE_WIDTH) ;
     }
     else if (direction < 0)
     {
         if ((con->vga_start_addr + TEXT_MODE_SIZE) < con->vga_mem_end)
-            con->vga_start_addr -= (direction * TEXT_MODE_WIDTH) ;
+            con->vga_start_addr += (direction * TEXT_MODE_WIDTH) ;
     }
 
     set_start_address(con->vga_start_addr) ;
     set_cursor(con->cursor_pos) ;
+}
+
+static bool store_key(CONSOLE *con, uint32_t key)
+{
+    if (con->buf_count < CONSOLE_BUF_LENGTH)
+    {
+        *(con->buf_head++) = key ;
+        if (con->buf_head == con->in_buf+CONSOLE_BUF_LENGTH)
+            con->buf_head = con->in_buf ; // reset
+        con->buf_count++ ;
+        return true ;
+    }
+    return false ;
 }
 
 // public function
@@ -141,13 +181,9 @@ void store_key_into_console(CONSOLE *con, uint32_t key)
     // if FLAG_EXT is set, don't show this character
     if (!(key & FLAG_EXT))
     {
-        if (con->buf_count < CONSOLE_BUF_LENGTH)
+        if (store_key(con, key))
         {
-            *(con->buf_head++) = key ;
-            if (con->buf_head == con->in_buf+CONSOLE_BUF_LENGTH)
-                con->buf_head = con->in_buf ; // reset
-
-            con->buf_count++ ;
+            // store key success
         }
         else
         {
@@ -161,14 +197,20 @@ void store_key_into_console(CONSOLE *con, uint32_t key)
         // try to implement move one line ;
         switch (raw_code)
         {
+        case ENTER:
+            store_key(con, '\n') ;
+            break ;
+        case BACKSPACE:
+            store_key(con, 'b') ;
+            break ;
         case UP:
             // shift + up arrow
             if ((key & FLAG_SHIFT_L) || (key & FLAG_SHIFT_R))
-                scroll_console(con, 1) ;
+                scroll_console(con, -1) ;
             break ;
         case DOWN:
             if ((key & FLAG_SHIFT_L) || (key & FLAG_SHIFT_R))
-                scroll_console(con, -1) ;
+                scroll_console(con, 1) ;
             break ;
         case F1:
         case F2:
