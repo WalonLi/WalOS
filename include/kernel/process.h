@@ -52,8 +52,18 @@ typedef struct _TASK
 } TASK ;
 
 
-#define TASK_CNT            4
-//#define TASK_CNT            1
+#define RING0_TASK_CNT      0
+
+#define CONSOLE_TASK_CNT    1
+#define RING1_TASK_CNT      CONSOLE_TASK_CNT + 0
+
+#define RING2_TASK_CNT      0
+
+#define USR_PROCS_CNT       3
+#define RING3_TASK_CNT      USR_PROCS_CNT + 0
+
+#define TOTAL_TASK_CNT      (RING0_TASK_CNT + RING1_TASK_CNT + RING2_TASK_CNT + RING3_TASK_CNT)
+
 #define STACK_SIZE_CONSOLE  0x8000
 #define STACK_SIZE_PROC_A   0x8000
 #define STACK_SIZE_PROC_B   0x8000

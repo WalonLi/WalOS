@@ -136,7 +136,7 @@ static void kb_wait()
     do
     {
         state = inb(KB_CMD) ;
-    } while (state & 0x02)
+    } while (state & 0x02) ;
 }
 
 static void kb_ack()
@@ -145,7 +145,7 @@ static void kb_ack()
     do
     {
         read = inb(KB_DATA) ;
-    } while (read != KB_ACK)
+    } while (read != KB_ACK) ;
 }
 
 static void set_kb_led()
@@ -209,7 +209,6 @@ static uint8_t get_byte_from_kb_buf()
     return scan_code ;
 }
 
-<<<<<<< HEAD
 void print_key(uint32_t k)
 {
     // if FLAG_EXT is set, don't show this character

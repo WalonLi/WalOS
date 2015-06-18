@@ -11,6 +11,7 @@
 static CONSOLE console[CONSOLE_CNT] ;
 static uint8_t current_console = 0 ;
 
+
 static void set_cursor(uint32_t pos)
 {
     __asm__ volatile("cli");
@@ -31,9 +32,26 @@ static void set_start_address(uint32_t addr)
     __asm__ volatile("sti");
 }
 
+static void scroll_console(CONSOLE *con, int direction)
+{
+    if (direction > 0)
+    {
+        if (con->vga_start_addr > con->vga_mem_start)
+            con->vga_start_addr -= (direction * TEXT_MODE_WIDTH) ;
+    }
+    else if (direction < 0)
+    {
+        if ((con->vga_start_addr + TEXT_MODE_SIZE) < con->vga_mem_end)
+            con->vga_start_addr -= (direction * TEXT_MODE_WIDTH) ;
+    }
+
+    set_start_address(con->vga_start_addr) ;
+    set_cursor(con->cursor_pos) ;
+}
+
 static void print_character(CONSOLE *con, char c)
 {
-    uint16_t *vmem_ptr = (uint16_t*)(VGA_MEM_BASE + (con->vga_start_addr*2) + (con->cursor_pos * 2)) ;
+    uint16_t *vmem_ptr = (uint16_t*)(VGA_MEM_BASE + (con->cursor_pos * 2)) ;
 
     switch (c)
     {
@@ -60,8 +78,8 @@ static void print_character(CONSOLE *con, char c)
         }
     }
 
-    while (con->cursor_pos >= con->vga_start_addr + TEXT_MODE_WIDTH)
-        scroll_console(con, 1) ;
+    while (con->cursor_pos >= con->vga_start_addr + TEXT_MODE_SIZE)
+        scroll_console(con, -1) ;
 
     set_cursor(con->cursor_pos) ;
     set_start_address(con->vga_start_addr) ;
@@ -82,6 +100,8 @@ static void init_consoles()
         console[i].vga_mem_start = i * offset ;
         console[i].vga_mem_end = console[i].vga_mem_start + offset ;
         console[i].vga_start_addr = console[i].vga_mem_start ;
+
+        console[i].cursor_pos = console[i].vga_mem_start ;
 
         // set cursor to begin
         if (i == 0)
@@ -125,23 +145,6 @@ static void console_write_key(CONSOLE *con)
         con->buf_count-- ;
         print_character(con, c) ;
     }
-}
-
-static void scroll_console(CONSOLE *con, int direction)
-{
-    if (direction > 0)
-    {
-        if (con->vga_start_addr > con->vga_mem_start)
-            con->vga_start_addr += (direction * TEXT_MODE_WIDTH) ;
-    }
-    else if (direction < 0)
-    {
-        if ((con->vga_start_addr + TEXT_MODE_SIZE) < con->vga_mem_end)
-            con->vga_start_addr += (direction * TEXT_MODE_WIDTH) ;
-    }
-
-    set_start_address(con->vga_start_addr) ;
-    set_cursor(con->cursor_pos) ;
 }
 
 static bool store_key(CONSOLE *con, uint32_t key)
@@ -201,16 +204,16 @@ void store_key_into_console(CONSOLE *con, uint32_t key)
             store_key(con, '\n') ;
             break ;
         case BACKSPACE:
-            store_key(con, 'b') ;
+            store_key(con, '\b') ;
             break ;
         case UP:
             // shift + up arrow
             if ((key & FLAG_SHIFT_L) || (key & FLAG_SHIFT_R))
-                scroll_console(con, -1) ;
+                scroll_console(con, 1) ;
             break ;
         case DOWN:
             if ((key & FLAG_SHIFT_L) || (key & FLAG_SHIFT_R))
-                scroll_console(con, 1) ;
+                scroll_console(con, -1) ;
             break ;
         case F1:
         case F2:

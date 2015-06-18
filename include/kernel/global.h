@@ -23,10 +23,11 @@ extern uint32_t     position;
 extern TSS          tss ;
 extern PROCESS      *process_ready;
 
-extern PROCESS      proc_table[TASK_CNT] ;
+extern PROCESS      proc_table[TOTAL_TASK_CNT] ;
 extern char         task_stack[STACK_SIZE] ;
 
-extern TASK         task_table[TASK_CNT] ;
+extern TASK         r1_task_table[RING1_TASK_CNT] ;
+extern TASK         r3_task_table[RING3_TASK_CNT] ;
 
 extern int          int_reenter ;
 

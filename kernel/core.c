@@ -46,7 +46,7 @@ void init_descriptor(DESCRIPTOR *desc, uint32_t base, uint32_t limit, uint16_t a
 void init_ldt_descs()
 {
     uint16_t selector_ldt = SELECTOR_LDT_FIRST ;
-    for ( int i = 0 ; i < TASK_CNT ; i++ )
+    for ( int i = 0 ; i < TOTAL_TASK_CNT ; i++ )
     {
         init_descriptor(&gdt[selector_ldt>>3],
                       vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[i].ldt),

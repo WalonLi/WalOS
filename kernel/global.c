@@ -17,7 +17,7 @@ uint32_t    position = 0;
 TSS         tss ;
 PROCESS     *process_ready ;
 
-PROCESS     proc_table[TASK_CNT] ;
+PROCESS     proc_table[TOTAL_TASK_CNT] ;
 char        task_stack[STACK_SIZE] ;
 
 // Task table
@@ -26,12 +26,11 @@ extern void process_A() ;
 extern void process_B() ;
 extern void process_C() ;
 
-TASK        task_table[TASK_CNT] = { {console_task, STACK_SIZE_CONSOLE, "console"},
-                                     {process_A, STACK_SIZE_PROC_A, "P_A"},
-                                     {process_B, STACK_SIZE_PROC_B, "P_B"},
-                                     {process_C, STACK_SIZE_PROC_C, "P_C"} } ;
+TASK        r1_task_table[RING1_TASK_CNT] = { {console_task, STACK_SIZE_CONSOLE, "console"}} ;
+TASK        r3_task_table[RING3_TASK_CNT] = {{process_A, STACK_SIZE_PROC_A, "P_A"},
+                                            {process_B, STACK_SIZE_PROC_B, "P_B"},
+                                            {process_C, STACK_SIZE_PROC_C, "P_C"} } ;
 
-//TASK        task_table[TASK_CNT] = { {process_A, STACK_SIZE_PROC_A, "P_A"}} ;
 int         int_reenter = 0 ;
 irq_handler irq_table[IRQ_CNT];
 
