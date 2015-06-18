@@ -60,10 +60,7 @@ void init_process_main()
     int_reenter = 0 ;
     ticks = 0 ;
 
-
     init_clock() ;
-
-    init_keyboard() ;
 
     restart_process() ;
     while(1) ;

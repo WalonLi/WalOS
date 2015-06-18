@@ -8,10 +8,14 @@
 #include "kernel/global.h"
 #include "kernel/keyboard.h"
 #include "kernel/vga.h"
+#include "kernel/console.h"
 #include "lib/common.h"
 
 static KB_INPUT kb_in ;
 
+static bool num_lock ;
+static bool caps_lock ;
+static bool scroll_lock ;
 /****************************************************************/
 /****************************************************************/
 /**************** HARDWARE interrupt essential*******************/
@@ -125,11 +129,47 @@ void clock_int_handler(int irq)
     process_schedule() ;
 }
 
+static void kb_wait()
+{
+    // check buffer is clean
+    uint8_t state ;
+    do
+    {
+        state = inb(KB_CMD) ;
+    } while (state & 0x02)
+}
+
+static void kb_ack()
+{
+    uint8_t read ;
+    do
+    {
+        read = inb(KB_DATA) ;
+    } while (read != KB_ACK)
+}
+
+static void set_kb_led()
+{
+    uint8_t led = (caps_lock<<2) | (num_lock<<1) | scroll_lock ;
+
+    kb_wait() ;
+    outb(LED_CODE, KB_DATA) ;
+    kb_ack() ;
+
+    kb_wait() ;
+    outb(led, KB_DATA) ;
+    kb_ack() ;
+}
 
 void init_keyboard()
 {
     kb_in.count = 0 ;
     kb_in.head = kb_in.tail = kb_in.buf ;
+
+    num_lock = true ;
+    caps_lock = false ;
+    scroll_lock = false ;
+    set_kb_led() ;
 
     set_irq_handler(IRQ_KEYBOARD, keyboard_int_handler) ;
     enable_irq(IRQ_KEYBOARD) ;
@@ -152,7 +192,7 @@ void keyboard_int_handler(int irq)
     }
 }
 
-uint8_t get_byte_from_kb_buf()
+static uint8_t get_byte_from_kb_buf()
 {
     while (!kb_in.count) ; // wait next keystroke
 
@@ -169,6 +209,7 @@ uint8_t get_byte_from_kb_buf()
     return scan_code ;
 }
 
+<<<<<<< HEAD
 void print_key(uint32_t k)
 {
     // if FLAG_EXT is set, don't show this character
@@ -213,7 +254,7 @@ void print_key(uint32_t k)
     }
 }
 
-void read_keyboard()
+void read_keyboard(CONSOLE *con)
 {
     static bool code_e0 = false ;
     static bool l_shift = false ;
@@ -222,9 +263,6 @@ void read_keyboard()
     static bool r_alt = false ;
     static bool l_ctrl = false ;
     static bool r_ctrl = false ;
-    //static bool caps_lock = false ;
-    //static bool num_lock = false ;
-    //static bool scroll_lock = false ;
 
 
     if (kb_in.count)
@@ -288,15 +326,18 @@ void read_keyboard()
 
             uint8_t col = 0 ;
 
+            bool caps = l_shift || r_shift ;
+            if (caps_lock)
+                if ((row[0] >= 'a' ) && row[0] <= 'z' )
+                    caps = !caps ;
+
+            if (caps) col = 1 ;
+            if (code_e0) col = 2 ;
+            /*
             if (l_shift || r_shift) col = 1 ;
             if (l_ctrl || r_ctrl) ;
             if (l_alt || r_alt) ;
-
-            if (code_e0)
-            {
-                col = 2 ;
-                code_e0 = false ;
-            }
+            */
 
             // get key by row and col
             key = row[col] ;
@@ -321,6 +362,27 @@ void read_keyboard()
             case ALT_R:
                 r_alt = is_make ;
                 break ;
+            case NUM_LOCK:
+                if (is_make)
+                {
+                    num_lock = !num_lock ;
+                    set_kb_led() ;
+                }
+                break ;
+            case CAPS_LOCK:
+                if (is_make)
+                {
+                    caps_lock = !caps_lock ;
+                    set_kb_led() ;
+                }
+                break ;
+            case SCROLL_LOCK:
+                if (is_make)
+                {
+                    scroll_lock = !scroll_lock ;
+                    set_kb_led() ;
+                }
+                break ;
             default:
                 //if(!is_make) key = 0 ;
                 break ;
@@ -328,14 +390,87 @@ void read_keyboard()
 
             if (is_make)
             {
+                bool pad = false ;
+                // handle right-side calculator
+                if (key >= PAD_SLASH && key <= PAD_9)
+                {
+                    pad = true ;
+                    switch (key)
+                    {
+                    case PAD_SLASH:
+                        key = '/' ;
+                        break ;
+                    case PAD_STAR:
+                        key = '*' ;
+                        break ;
+                    case PAD_MINUS:
+                        key = '-' ;
+                        break ;
+                    case PAD_PLUS:
+                        key = '+' ;
+                        break ;
+                    case PAD_ENTER:
+                        key = ENTER ;
+                        break ;
+                    default:
+                        if (num_lock)
+                        {
+                            if (key >= PAD_0 && key <= PAD_9)
+                                key = key - PAD_0 + '0' ;
+                            else if (key == PAD_DOT)
+                                key = '.' ;
+                        }
+                        else
+                        {
+                            switch(key)
+                            {
+                            case PAD_HOME:
+                                key = HOME;
+                                break;
+                            case PAD_END:
+                                key = END;
+                                break;
+                            case PAD_PAGEUP:
+                                key = PAGEUP;
+                                break;
+                            case PAD_PAGEDOWN:
+                                key = PAGEDOWN;
+                                break;
+                            case PAD_INS:
+                                key = INSERT;
+                                break;
+                            case PAD_UP:
+                                key = UP;
+                                break;
+                            case PAD_DOWN:
+                                key = DOWN;
+                                break;
+                            case PAD_LEFT:
+                                key = LEFT;
+                                break;
+                            case PAD_RIGHT:
+                                key = RIGHT;
+                                break;
+                            case PAD_DOT:
+                                key = DELETE;
+                                break;
+                            default:
+                                break;
+                            }
+                        }
+                        break ;
+                    }
+                }
+
                 key |= (l_shift) ? FLAG_SHIFT_L : 0 ;
                 key |= (r_shift) ? FLAG_SHIFT_R : 0 ;
                 key |= (l_ctrl) ? FLAG_CTRL_L : 0 ;
                 key |= (r_ctrl) ? FLAG_CTRL_R : 0 ;
                 key |= (l_alt) ? FLAG_ALT_L : 0 ;
                 key |= (r_alt) ? FLAG_ALT_R : 0 ;
+                key |= (pad) ? FLAG_PAD : 0;
 
-                print_key(key) ;
+                store_key_into_console(con, key) ;
             }
         }
     }

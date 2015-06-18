@@ -43,6 +43,7 @@
 		<Unit filename="boot/loader.ld" />
 		<Unit filename="boot/loader.s" />
 		<Unit filename="include/kernel/attribute.h" />
+		<Unit filename="include/kernel/console.h" />
 		<Unit filename="include/kernel/core.h" />
 		<Unit filename="include/kernel/exception.h" />
 		<Unit filename="include/kernel/global.h" />
