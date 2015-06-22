@@ -42,6 +42,7 @@ typedef struct _PROCESS
     int             priority ;
     uint32_t        p_id ;
     char            p_name[16] ;
+    int             console_id ;
 } PROCESS;
 
 typedef struct _TASK

@@ -33,7 +33,7 @@ extern int          int_reenter ;
 
 extern irq_handler  irq_table[IRQ_CNT];
 
-extern void         *sys_call_table[1] ;
+extern void         *sys_call_table[SYS_CALL_TBL_CNT] ;
 
 extern int          ticks ;
 

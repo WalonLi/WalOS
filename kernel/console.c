@@ -45,8 +45,11 @@ static void scroll_console(CONSOLE *con, int direction)
             con->vga_start_addr -= (direction * TEXT_MODE_WIDTH) ;
     }
 
-    set_start_address(con->vga_start_addr) ;
-    set_cursor(con->cursor_pos) ;
+    if (&console[current_console] == con)
+    {
+        set_start_address(con->vga_start_addr) ;
+        set_cursor(con->cursor_pos) ;
+    }
 }
 
 static void print_character(CONSOLE *con, char c)
@@ -81,8 +84,11 @@ static void print_character(CONSOLE *con, char c)
     while (con->cursor_pos >= con->vga_start_addr + TEXT_MODE_SIZE)
         scroll_console(con, -1) ;
 
-    set_cursor(con->cursor_pos) ;
-    set_start_address(con->vga_start_addr) ;
+    if (&console[current_console] == con)
+    {
+        set_cursor(con->cursor_pos) ;
+        set_start_address(con->vga_start_addr) ;
+    }
 }
 
 static void init_consoles()
@@ -226,6 +232,16 @@ void store_key_into_console(CONSOLE *con, uint32_t key)
         default:
             break ;
         }
+    }
+}
+
+void console_write(int con_id, char *buf, int len)
+{
+    char *p = buf;
+    int i = len ;
+    while(i--)
+    {
+        print_character(&console[con_id], *p++) ;
     }
 }
 

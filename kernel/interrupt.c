@@ -491,6 +491,12 @@ int sys_get_ticks()
     return ticks ;
 }
 
+extern void console_write(int con_id, char *buf, int len) ;
+int sys_write(char *buf, int len, PROCESS *proc)
+{
+    console_write(proc->console_id, buf, len) ;
+    return 0 ;
+}
 
 
 

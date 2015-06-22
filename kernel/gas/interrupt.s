@@ -235,9 +235,14 @@ _enable_S:
 # software interrupt
 sys_call:
     call    _save
+    pushl   process_ready
     sti
 
+    push    %ecx
+    push    %ebx
     call    *sys_call_table(, %eax, 4)
+    add     $(4*3),     %esp
+
     movl    %eax,       (EAX_REG-PROC_STACK_BASE)(%esi)
 
     cli

@@ -8,6 +8,7 @@
 
 #include "kernel/core.h"
 #include "kernel/attribute.h"
+#include "kernel/process.h"
 
 
 // HARDWARE
@@ -81,10 +82,11 @@ void    keyboard_int_handler(int irq) ;
 void    read_keyboard() ;
 
 // SOFTWARE
-#define SYS_CALL_TBL_CNT    1
+#define SYS_CALL_TBL_CNT    2
 #define INT_VECTOR_SYS_CALL 0x90
 void    sys_call() ;
 int     sys_get_ticks() ;
+int     sys_write(char *buf, int len, PROCESS *proc) ;
 
 void    init_sw_interrupt_idt() ;
 

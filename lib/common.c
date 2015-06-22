@@ -30,6 +30,52 @@ void show_msg_ext(char *msg, uint16_t color)
     }
 }
 
+int vsprintf(char *buf, const char *fmt, va_list args)
+{
+    char *p ;
+    va_list next_arg = args ;
+
+    for (p = buf ; *fmt ; fmt++ )
+    {
+        char tmp[256] = {0};
+
+        if (*fmt != '%')
+        {
+            *p++ = *fmt ;
+            continue ;
+        }
+
+        fmt++ ;
+        switch(*fmt)
+        {
+        case 'x':
+            itoa(*((int*)next_arg), tmp) ;
+            strcpy(p, tmp) ;
+            next_arg += 4 ;
+            p += strlen(tmp) ;
+            break ;
+        case 's':
+            break ;
+        default:
+            break ;
+        }
+    }
+
+    return (p - buf) ;
+}
+
+void write(char *buf, int len) ;
+
+int printf(const char *fmt, ...)
+{
+    int i ;
+    char buf[256] ;
+
+    va_list arg = (va_list)((char*)(&fmt) + 4) ;
+    i = vsprintf(buf, fmt, arg) ;
+    write(buf, i) ;
+    return i ;
+}
 
 int atoi(const char *s)
 {

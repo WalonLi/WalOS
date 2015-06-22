@@ -49,6 +49,8 @@ void init_process_main()
 
 
         proc_table[i].p_id = i ;
+        proc_table[i].console_id = 0 ;
+
         strcpy(proc_table[i].p_name, task->name) ;
 
         proc_table[i].ldt_sel = selector_ldt ;
@@ -81,7 +83,13 @@ void init_process_main()
 
     proc_table[0].ticks = proc_table[0].priority = 15 ;
     proc_table[1].ticks = proc_table[1].priority = 5 ;
-    proc_table[2].ticks = proc_table[2].priority = 3 ;
+    proc_table[2].ticks = proc_table[2].priority = 5 ;
+    proc_table[3].ticks = proc_table[3].priority = 5 ;
+
+    proc_table[1].console_id = 0 ;
+    proc_table[2].console_id = 1 ;
+    proc_table[3].console_id = 1 ;
+
 
 
     process_ready = proc_table ;
@@ -125,8 +133,8 @@ void process_A()
 {
     while (true)
     {
-        //show_msg("A.") ;
-        delay(10) ;
+        printf("A:") ;
+        delay(300) ;
     }
 }
 
@@ -134,8 +142,8 @@ void process_B()
 {
     while (true)
     {
-        //show_msg("B.") ;
-        delay(10) ;
+        printf("B:") ;
+        delay(300) ;
     }
 }
 
@@ -143,7 +151,7 @@ void process_C()
 {
     while (true)
     {
-        //show_msg("C.") ;
-        delay(10) ;
+        printf("C:") ;
+        delay(300) ;
     }
 }
