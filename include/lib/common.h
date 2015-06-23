@@ -19,4 +19,8 @@ char *itoa_base(int value, char *dest, int radix) ;
 
 //void delay(int time) ;
 void delay(int milli) ;
+
+int printf(const char *fmt, ...) ;
+int vsprintf(char *buf, const char *fmt, va_list args) ;
+
 #endif

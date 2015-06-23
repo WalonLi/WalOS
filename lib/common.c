@@ -3,7 +3,6 @@
     2015/5/27
 **/
 
-#include "type.h"
 #include "lib/common.h"
 #include "lib/string.h"
 #include "kernel/core.h"
@@ -38,6 +37,8 @@ int vsprintf(char *buf, const char *fmt, va_list args)
     for (p = buf ; *fmt ; fmt++ )
     {
         char tmp[256] = {0};
+        char fill_zero ;
+        int align = 0 ;
 
         if (*fmt != '%')
         {
@@ -46,26 +47,64 @@ int vsprintf(char *buf, const char *fmt, va_list args)
         }
 
         fmt++ ;
+
+        // handle %%
+        if (*fmt == '%')
+        {
+            *p++ = *fmt ;
+            continue ;
+        }
+        else if (*fmt == '0')
+        {
+            fill_ch = '0' ;
+            fmt++ ;
+        }
+        else
+            fill_ch = ' ' ;
+
+        for ( ; ((uint8_t)(*fmt) >= '0') && ((uint8_t)(*fmt) <= '9') ; fmt++)
+        {
+            align *= 10 ;
+            align += *fmt - '0' ;
+        }
+
         switch(*fmt)
         {
         case 'x':
-            itoa(*((int*)next_arg), tmp) ;
-            strcpy(p, tmp) ;
+            itoa_base(*((int*)next_arg), tmp, 16) ;
             next_arg += 4 ;
-            p += strlen(tmp) ;
+            break ;
+        case 'd':
+            itoa(*((int*)next_arg), tmp) ;
+            next_arg += 4 ;
+            break ;
+        case 'c':
+            *tmp = *((char*)next_arg) ;
+            next_arg += 4 ;
             break ;
         case 's':
+            strcpy(tmp, (*((char**)next_arg))) ;
+            next_arg += 4;
             break ;
         default:
             break ;
         }
+
+        if (strlen(tmp) < align)
+        {
+            for (int j = 0 ; j < align - strlen(tmp) ; j++)
+                *p++ = fill_zero ;
+        }
+
+        strcpy(p, tmp) ;
+        p += strlen(tmp) ;
     }
 
+    *p = '\0' ;
     return (p - buf) ;
 }
 
-void write(char *buf, int len) ;
-
+extern void write(char *buf, int len) ;
 int printf(const char *fmt, ...)
 {
     int i ;
@@ -73,7 +112,7 @@ int printf(const char *fmt, ...)
 
     va_list arg = (va_list)((char*)(&fmt) + 4) ;
     i = vsprintf(buf, fmt, arg) ;
-    write(buf, i) ;
+    write(buf, i) ; // call system call
     return i ;
 }
 
