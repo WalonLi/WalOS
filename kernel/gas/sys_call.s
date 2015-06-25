@@ -11,6 +11,7 @@
 
 .global     get_ticks
 .global     write
+.global     send_recv
 
 get_ticks:
     mov     $GET_TICKS_INDEX, %eax
@@ -21,6 +22,14 @@ write:
     mov     $WRITE_INDEX,  %eax
     mov     4(%esp),    %ebx
     mov     8(%esp),    %ecx
+    int     $INT_VECTOR_SYS_CALL
+    ret
+
+send_recv:
+    mov     $SEND_RECV_INDEX, %eax
+    mov     4(%esp),    %ebx            #function
+    mov     8(%esp),    %ecx            #src_dest
+    mov     12(%esp),   %edx            #msg
     int     $INT_VECTOR_SYS_CALL
     ret
 

@@ -72,6 +72,9 @@ typedef struct _TASK
 #define STACK_SIZE          STACK_SIZE_PROC_A + STACK_SIZE_PROC_B + STACK_SIZE_PROC_C
 //#define STACK_SIZE          STACK_SIZE_PROC_A
 
+
+#define GET_PROCESS_ID(p) (p-proc_table)
+
 void init_process_main() ;
 void process_schedule() ;
 void restart_process() ;

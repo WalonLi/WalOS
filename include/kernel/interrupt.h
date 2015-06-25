@@ -87,6 +87,7 @@ void    read_keyboard() ;
 void    sys_call() ;
 int     sys_get_ticks() ;
 int     sys_write(char *buf, int len, PROCESS *proc) ;
+int     sys_send_recv(int func, int src_dest, MESSAGE *msg, PROCESS *p) ;
 
 void    init_sw_interrupt_idt() ;
 
