@@ -53,6 +53,7 @@
 		<Unit filename="include/kernel/process.h" />
 		<Unit filename="include/kernel/vga.h" />
 		<Unit filename="include/lib/common.h" />
+		<Unit filename="include/lib/debug.h" />
 		<Unit filename="include/lib/string.h" />
 		<Unit filename="include/type.h" />
 		<Unit filename="kernel/console.c">
@@ -80,6 +81,9 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="lib/common.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="lib/debug.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="lib/string.c">

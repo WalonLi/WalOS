@@ -8,6 +8,7 @@
 
 #include "type.h"
 #include "kernel/core.h"
+#include "lib/debug_.h"
 
 typedef void (*task_handler)() ;
 
@@ -73,7 +74,10 @@ typedef struct _TASK
 //#define STACK_SIZE          STACK_SIZE_PROC_A
 
 
-#define GET_PROCESS_ID(p) (p-proc_table)
+#define GET_PROCESS_INDEX(p) (p-proc_table)
+#define IPC_SEND            0x1
+#define IPC_RECEIVE         0x2
+#define IPC_BOTH            0x3
 
 void init_process_main() ;
 void process_schedule() ;

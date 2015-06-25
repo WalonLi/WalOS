@@ -68,9 +68,16 @@ _save:
     push    %es
     push    %fs
     push    %gs
+
+    # warning, from now on, we can't use push/pop until 'mov $StackTop, %esp'
+    # because it will destroy proc_table
+
+    mov     %edx,   %esi # reserve edx into esi because it store syscall para.
     mov     %ss,    %dx
     mov     %dx,    %ds
     mov     %dx,    %es
+    mov     %dx,    %fs
+    mov     %esi,   %edx # restore
 
     mov     %esp,   %esi
 
@@ -235,13 +242,16 @@ _enable_S:
 # software interrupt
 sys_call:
     call    _save
-    pushl   process_ready
     sti
 
+    push    %esi
+    pushl   process_ready
+
+    push    %edx
     push    %ecx
     push    %ebx
     call    *sys_call_table(, %eax, 4)
-    add     $(4*3),     %esp
+    add     $(4*4),     %esp
 
     movl    %eax,       (EAX_REG-PROC_STACK_BASE)(%esi)
 

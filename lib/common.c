@@ -112,7 +112,8 @@ int printf(const char *fmt, ...)
 
     va_list arg = (va_list)((char*)(&fmt) + 4) ;
     i = vsprintf(buf, fmt, arg) ;
-    write(buf, i) ; // call system call
+    // write(buf, i) ; // call system call
+    printx(buf) ; // call system call
     return i ;
 }
 

@@ -86,7 +86,8 @@ void    read_keyboard() ;
 #define INT_VECTOR_SYS_CALL 0x90
 void    sys_call() ;
 int     sys_get_ticks() ;
-int     sys_write(char *buf, int len, PROCESS *proc) ;
+//int     sys_write(char *buf, int len, PROCESS *proc) ;
+int     sys_printx(int unused1, int unused2, char *msg, PROCESS *proc)
 int     sys_send_recv(int func, int src_dest, MESSAGE *msg, PROCESS *p) ;
 
 void    init_sw_interrupt_idt() ;

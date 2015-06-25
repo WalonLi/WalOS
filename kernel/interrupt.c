@@ -10,6 +10,7 @@
 #include "kernel/vga.h"
 #include "kernel/console.h"
 #include "lib/common.h"
+#include "lib/debug.h"
 
 static KB_INPUT kb_in ;
 
@@ -492,12 +493,33 @@ int sys_get_ticks()
 }
 
 extern void console_write(int con_id, char *buf, int len) ;
+
+int sys_printx(int unused1, int unused2, char *msg, PROCESS *proc)
+{
+    char error[] = "x critical error for unknown" ;
+    error[0] = MAGIC_CH_CRITICAL ;
+
+    // if on RING 0, don't do virtual -> physical.
+    // else is need.
+    char *n_msg ;
+    if (int_reenter == 0) // RING 1~3
+        n_msg = vir_to_phy(GET_PROCESS_INDEX(proc), msg) ;
+    else
+        n_msg = msg ;
+
+    if ((*n_msg == MAGIC_CH_ASSERT)
+        || (*n_msg == MAGIC_CH_ASSERT && process_ready < &proc_table[RING1_TASK_CNT])
+    {
+
+    }
+}
+#if 0
 int sys_write(char *buf, int len, PROCESS *proc)
 {
     console_write(proc->console_id, buf, len) ;
     return 0 ;
 }
-
+#endif
 /*
     function: send / receive
     src_dest: to / from (message)
@@ -511,7 +533,24 @@ int sys_send_recv(int func, int src_dest, MESSAGE *msg, PROCESS *p)
     // assert((src_dest >= 0 && src_dest < TOTAL_TASK_CNT) || src_dest == ANY || src_dest == INTERRUPT) ;
 
     int ret  = 0 ;
-    int caller = GET_PROCESS_ID(p) ;
+    int caller_index = GET_PROCESS_INDEX(p) ;
+
+    if (func == IPC_SEND)
+    {
+        ret = msg_send(p, src_dest, msg) ;
+        if (ret) return ret ;
+    }
+    else if (func == IPC_RECEIVE)
+    {
+        ret = msg_recv(p, src_dest, msg) ;
+        if (ret) return ret ;
+    }
+    else
+    {
+        CRITICAL("ERROR BOTH") ;
+    }
+
+    return 0 ;
 }
 
 
