@@ -498,6 +498,7 @@ int sys_write(char *buf, int len, PROCESS *proc)
     return 0 ;
 }
 
+#if 0
 /*
     function: send / receive
     src_dest: to / from (message)
@@ -513,5 +514,5 @@ int sys_send_recv(int func, int src_dest, MESSAGE *msg, PROCESS *p)
     int ret  = 0 ;
     int caller = GET_PROCESS_ID(p) ;
 }
-
+#endif
 
