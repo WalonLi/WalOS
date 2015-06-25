@@ -498,5 +498,20 @@ int sys_write(char *buf, int len, PROCESS *proc)
     return 0 ;
 }
 
+/*
+    function: send / receive
+    src_dest: to / from (message)
+    msg: message pointer
+    p: caller process .
+*/
+int sys_send_recv(int func, int src_dest, MESSAGE *msg, PROCESS *p)
+{
+    ASSERT(int_reenter == 0) ;
+    ASSERT((src_dest >= 0 && src_dest < TOTAL_TASK_CNT)) ;
+    // assert((src_dest >= 0 && src_dest < TOTAL_TASK_CNT) || src_dest == ANY || src_dest == INTERRUPT) ;
+
+    int ret  = 0 ;
+    int caller = GET_PROCESS_ID(p) ;
+}
 
 
