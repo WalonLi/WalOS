@@ -37,7 +37,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
     for (p = buf ; *fmt ; fmt++ )
     {
         char tmp[256] = {0};
-        char fill_zero ;
+        char fill_ch ;
         int align = 0 ;
 
         if (*fmt != '%')
@@ -93,7 +93,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
         if (strlen(tmp) < align)
         {
             for (int j = 0 ; j < align - strlen(tmp) ; j++)
-                *p++ = fill_zero ;
+                *p++ = fill_ch ;
         }
 
         strcpy(p, tmp) ;

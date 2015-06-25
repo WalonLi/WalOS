@@ -55,8 +55,8 @@ typedef struct _TASK
 
 #define RING0_TASK_CNT      0
 
-#define CONSOLE_TASK_CNT    1
-#define RING1_TASK_CNT      CONSOLE_TASK_CNT + 0
+#define KRNL_TASK_CNT       1
+#define RING1_TASK_CNT      KRNL_TASK_CNT + 0
 
 #define RING2_TASK_CNT      0
 
