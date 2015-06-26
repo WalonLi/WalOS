@@ -8,6 +8,7 @@
 
 #include "type.h"
 #include "kernel/core.h"
+//#include "kernel/message.h"
 
 typedef void (*task_handler)() ;
 
@@ -42,6 +43,18 @@ typedef struct _PROCESS
     int             priority ;
     uint32_t        p_id ;
     char            p_name[16] ;
+
+    // new
+    int             flags ;
+    struct MESSAGE  *msg ;
+    int             recv_from ;
+    int             send_to ;
+    bool            have_int_msg ;
+
+    // Have a send queue to handle message.
+    struct PROCESS  *current_send ;
+    struct PROCESS  *next_send ;
+
     int             console_id ;
 } PROCESS;
 
@@ -79,7 +92,8 @@ typedef struct _TASK
 void init_process_main() ;
 void process_schedule() ;
 void restart_process() ;
-void* vir_to_phy(int pid, void* vir_addr) ;
+int ldt_linear_addr(PROCESS *p, int index) ;
+void* vir_to_linear(int pid, void* vir_addr) ;
 
 
 #endif

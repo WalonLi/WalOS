@@ -9,6 +9,7 @@
 #include "kernel/core.h"
 #include "kernel/attribute.h"
 #include "kernel/process.h"
+#include "kernel/message.h"
 
 
 // HARDWARE

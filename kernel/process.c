@@ -131,14 +131,14 @@ int ldt_linear_addr(PROCESS *p, int index)
     return p->ldt[index].base_high << 24 | p->ldt[index].base_mid << 16 | p->ldt[index].base_low ;
 }
 
-void* vir_to_phy(int pid, void* vir_addr)
+void* vir_to_linear(int pid, void* vir_addr)
 {
-
+    // in normal case, seg_base = 0, because it occupy 0~4G
     uint32_t seg_base = ldt_linear_addr(&proc_table[pid], INDEX_LDT_RW);
     uint32_t linear_addr = seg_base + (uint32_t)vir_addr;
 
     if (pid < TOTAL_TASK_CNT) {
-        //ASSERT(linear_addr == (uint32_t)vir_addr);
+        ASSERT(linear_addr == (uint32_t)vir_addr); // should be same, because all process have 0~4G
     }
 
     return (void*)linear_addr;

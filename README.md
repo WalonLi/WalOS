@@ -2,7 +2,15 @@
 
 It's a small x86 OS.
 
-
+#####Build on Linux(Ubuntu 14.04)
+````
+$ sudo apt-get install vgabios bochs bochs-x bximage
+$ sudo apt-get install gcc git
+$ git clone https://github.com/WalonLi/WalOS.git
+$ cd WalOS
+$ ./start.sh
+<bochs:1> c
+````
 ----
 
 #####Reference
@@ -17,7 +25,7 @@ It's a small x86 OS.
 [Executable and Linkable Format (ELF) document](http://flint.cs.yale.edu/cs422/doc/ELF_Format.pdf)
 
 ----
-#####Current Flow(6/11)
+#####Current Flow(6/26)
 ```
             -------------------------------------------------------
 BootSector  |       Boot to BootSector
@@ -40,9 +48,10 @@ Kernel      |       Jump to kernel
             |       Initial Process Table
             |       Initial Clock interrupt
             |       
+            |       Prepare printx/send_recv system call.
+            |       Prepare IPC(doing now)
             |       Process start...
-            |       A, B and C start around
-            |       In A process, I demo a simple system call to get current tick.
+            |       
             -------------------------------------------------------
 ```
 

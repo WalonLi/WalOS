@@ -50,6 +50,7 @@
 		<Unit filename="include/kernel/interrupt.h" />
 		<Unit filename="include/kernel/io.h" />
 		<Unit filename="include/kernel/keyboard.h" />
+		<Unit filename="include/kernel/message.h" />
 		<Unit filename="include/kernel/process.h" />
 		<Unit filename="include/kernel/system.h" />
 		<Unit filename="include/kernel/vga.h" />
@@ -76,6 +77,9 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="kernel/interrupt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/message.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="kernel/process.c">

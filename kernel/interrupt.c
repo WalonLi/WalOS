@@ -506,7 +506,7 @@ int sys_printx(int un1, int un2, char *msg, PROCESS *proc)
 {
     char *p ;
     if (int_reenter == 0) // RING 1~3
-        p = vir_to_phy(GET_PROCESS_ID(proc), msg) ;
+        p = vir_to_linear(GET_PROCESS_ID(proc), msg) ;
     else // RING 0
         p = msg ;
 
@@ -547,14 +547,36 @@ int sys_printx(int un1, int un2, char *msg, PROCESS *proc)
     msg: message pointer
     p: caller process .
 */
-int sys_send_recv(int func, int src_dest, MESSAGE *msg, PROCESS *p)
+int sys_send_recv(int func, int src_dest, MESSAGE *msg, PROCESS *proc)
 {
-    // ASSERT(int_reenter == 0) ;
+    ASSERT(int_reenter == 0) ; // RING0 only
     // ASSERT((src_dest >= 0 && src_dest < TOTAL_TASK_CNT)) ;
-    // assert((src_dest >= 0 && src_dest < TOTAL_TASK_CNT) || src_dest == ANY || src_dest == INTERRUPT) ;
+    // ASSERT((src_dest >= 0 && src_dest < TOTAL_TASK_CNT) || src_dest == ANY || src_dest == INTERRUPT) ;
 
-    // int ret  = 0 ;
-    // int caller = GET_PROCESS_ID(p) ;
+    int ret  = 0 ;
+
+    MESSAGE *msg_la = vir_to_linear(GET_PROCESS_ID(proc), msg) ;
+    msg_la->source = GET_PROCESS_ID(proc) ; // assign caller index to msg_la
+
+    ASSERT(msg_la->source != src_dest) ; // src and dest should be different
+
+    switch(func)
+    {
+    case IPC_SEND:
+        ret = msg_send(proc, src_dest, msg) ;
+        if (ret) return ret ;
+        break ;
+
+    case IPC_RECEIVE:
+        ret = msg_recv(proc, src_dest, msg) ;
+        if (ret) return ret ;
+        break ;
+
+    default:
+        CRITICAL("FUCK, NOT SUPPORT") ;
+        break ;
+    }
+
     return 0 ;
 }
 
