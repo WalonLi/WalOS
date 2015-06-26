@@ -10,7 +10,7 @@
 .text
 
 .global     get_ticks
-.global     write
+.global     printx
 .global     send_recv
 
 get_ticks:
@@ -18,10 +18,16 @@ get_ticks:
     int     $INT_VECTOR_SYS_CALL
     ret
 
-write:
-    mov     $WRITE_INDEX,  %eax
-    mov     4(%esp),    %ebx
-    mov     8(%esp),    %ecx
+#write:
+#    mov     $WRITE_INDEX,  %eax
+#    mov     4(%esp),    %ebx
+#    mov     8(%esp),    %ecx
+#    int     $INT_VECTOR_SYS_CALL
+#    ret
+
+printx:
+    mov     $PRINTX_INDEX, %eax
+    mov     4(%esp),    %edx
     int     $INT_VECTOR_SYS_CALL
     ret
 

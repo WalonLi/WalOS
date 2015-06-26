@@ -10,6 +10,7 @@
 #include "kernel/vga.h"
 #include "kernel/console.h"
 #include "lib/common.h"
+#include "lib/debug.h"
 
 static KB_INPUT kb_in ;
 
@@ -486,19 +487,60 @@ void init_sw_interrupt_idt()
     init_idt_desc(INT_VECTOR_SYS_CALL, DA_386IGate, sys_call, PRI_USER) ;
 }
 
-int sys_get_ticks()
+
+int sys_get_ticks(int un1, int un2, int un3, int un4)
 {
     return ticks ;
 }
-
+#if 0
 extern void console_write(int con_id, char *buf, int len) ;
 int sys_write(char *buf, int len, PROCESS *proc)
 {
     console_write(proc->console_id, buf, len) ;
     return 0 ;
 }
+#endif
 
-#if 0
+extern void console_write(int con_id, char *buf, int len) ;
+int sys_printx(int un1, int un2, char *msg, PROCESS *proc)
+{
+    char *p ;
+    if (int_reenter == 0) // RING 1~3
+        p = vir_to_phy(GET_PROCESS_ID(proc), msg) ;
+    else // RING 0
+        p = msg ;
+
+    /*
+        if it's a CRITICAL or ASSERT + (RING0 || RING1)
+        system hang.
+    */
+    if ((*p == MAGIC_CH_CRITICAL)
+        ||(*p == MAGIC_CH_ASSERT && proc < & proc_table[RING0_TASK_CNT+RING1_TASK_CNT]))
+    {
+        __asm__ __volatile__("cli");
+        char *vga = (char*)VGA_MEM_BASE ;
+        char *m = p+1 ;
+
+        while(vga < (char*)(VGA_MEM_BASE+VGA_MEM_SIZE))
+        {
+            if (*m == '\0') __asm__ __volatile__("hlt");
+
+            *vga++ = *m++ ;
+            *vga++ = 0x74 ; // red color
+        }
+    }
+
+
+    // skip magic character
+    if (*p && (*p == MAGIC_CH_ASSERT || *p == MAGIC_CH_CRITICAL))
+        p++ ;
+
+    if (*p)
+        console_write(proc->console_id, p, strlen(p)) ;
+
+    return 0 ;
+}
+
 /*
     function: send / receive
     src_dest: to / from (message)
@@ -507,12 +549,12 @@ int sys_write(char *buf, int len, PROCESS *proc)
 */
 int sys_send_recv(int func, int src_dest, MESSAGE *msg, PROCESS *p)
 {
-    ASSERT(int_reenter == 0) ;
-    ASSERT((src_dest >= 0 && src_dest < TOTAL_TASK_CNT)) ;
+    // ASSERT(int_reenter == 0) ;
+    // ASSERT((src_dest >= 0 && src_dest < TOTAL_TASK_CNT)) ;
     // assert((src_dest >= 0 && src_dest < TOTAL_TASK_CNT) || src_dest == ANY || src_dest == INTERRUPT) ;
 
-    int ret  = 0 ;
-    int caller = GET_PROCESS_ID(p) ;
+    // int ret  = 0 ;
+    // int caller = GET_PROCESS_ID(p) ;
+    return 0 ;
 }
-#endif
 

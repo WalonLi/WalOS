@@ -94,6 +94,9 @@ typedef struct _TSS
 #define SELECTOR_KERNEL_DS  SELECTOR_FLAT_RW
 #define SELECTOR_KERNEL_GS  SELECTOR_VIDEO
 
+// LDT
+#define INDEX_LDT_C         0x0
+#define INDEX_LDT_RW        0x1
 
 #define vir2phys(seg_base, vir) (uint32_t)(((uint32_t)seg_base) + (uint32_t)(vir))
 uint32_t seg2phys(uint16_t seg) ;

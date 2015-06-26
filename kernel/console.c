@@ -7,6 +7,7 @@
 #include "kernel/io.h"
 #include "kernel/global.h"
 #include "kernel/console.h"
+#include "lib/debug.h"
 
 static CONSOLE console[CONSOLE_CNT] ;
 static uint8_t current_console = 0 ;

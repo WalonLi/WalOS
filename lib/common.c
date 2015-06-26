@@ -104,7 +104,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
     return (p - buf) ;
 }
 
-extern void write(char *buf, int len) ;
+extern void printx(char *buf) ;
 int printf(const char *fmt, ...)
 {
     int i ;
@@ -112,7 +112,7 @@ int printf(const char *fmt, ...)
 
     va_list arg = (va_list)((char*)(&fmt) + 4) ;
     i = vsprintf(buf, fmt, arg) ;
-    write(buf, i) ; // call system call
+    printx(buf) ; // call system call
     return i ;
 }
 
@@ -190,8 +190,9 @@ void delay(int milli)
 {
     int t = get_ticks() ;
     while(((get_ticks()-t) * 1000 / HZ) < milli) ;
+
     /*
-    for (volatile int i = 0 ; i  < time ; i++)
+    for (volatile int i = 0 ; i  < milli ; i++)
         for (volatile int k = 0 ; k < 10 ; k++)
             for (volatile int j = 0 ; j < 10000 ; j++ ) ;
     */

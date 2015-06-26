@@ -12,31 +12,31 @@
 #include "kernel/keyboard.h"
 
 // global parameter
-extern uint8_t      gdt_ptr[6]; // 0-15:Limit  16-47:Base
-extern DESCRIPTOR   gdt[GDT_SIZE];
+extern uint8_t      gdt_ptr[]; // 0-15:Limit  16-47:Base
+extern DESCRIPTOR   gdt[];
 
-extern uint8_t      idt_ptr[6]; // 0-15:Limit  16-47:Base
-extern GATE         idt[IDT_SIZE];
+extern uint8_t      idt_ptr[]; // 0-15:Limit  16-47:Base
+extern GATE         idt[];
 
 extern uint32_t     position;
 
 extern TSS          tss ;
 extern PROCESS      *process_ready;
 
-extern PROCESS      proc_table[TOTAL_TASK_CNT] ;
-extern char         task_stack[STACK_SIZE] ;
+extern PROCESS      proc_table[] ;
+extern char         task_stack[] ;
 
-extern TASK         r1_task_table[RING1_TASK_CNT] ;
-extern TASK         r3_task_table[RING3_TASK_CNT] ;
+extern TASK         r1_task_table[] ;
+extern TASK         r3_task_table[] ;
 
 extern int          int_reenter ;
 
-extern irq_handler  irq_table[IRQ_CNT];
+extern irq_handler  irq_table[];
 
-extern void         *sys_call_table[SYS_CALL_TBL_CNT] ;
+extern void         *sys_call_table[] ;
 
 extern int          ticks ;
 
-extern uint32_t     key_map[NR_SCAN_CODES * MAP_COLS] ;
+extern uint32_t     key_map[] ;
 
 #endif

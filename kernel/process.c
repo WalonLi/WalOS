@@ -6,6 +6,7 @@
 #include "kernel/process.h"
 #include "lib/common.h"
 #include "lib/string.h"
+#include "lib/debug.h"
 
 void init_process_main()
 {
@@ -21,6 +22,7 @@ void init_process_main()
         uint8_t privilege = 0 ;
         uint8_t rpl = 0 ;
         int eflags = 0 ;
+        int priority = 0 ;
 
         if (i < RING0_TASK_CNT)
         {
@@ -33,6 +35,7 @@ void init_process_main()
             privilege =  PRI_TASK ;
             rpl = RPL_TASK ;
             eflags = 0x1202 ; // IF=1, IOPL=1, bit2 always set 1 ;
+            priority = 15 ;
         }
         else if (i < RING0_TASK_CNT + RING1_TASK_CNT + RING2_TASK_CNT)
         {
@@ -45,6 +48,7 @@ void init_process_main()
             privilege =  PRI_USER ;
             rpl = RPL_USER;
             eflags = 0x202 ; // IF=1, bit2 always set 1 ;
+            priority = 5 ;
         }
 
 
@@ -74,6 +78,7 @@ void init_process_main()
         proc_table[i].regs.esp = (uint32_t)top_stack ;
         proc_table[i].regs.eflags = eflags ;
 
+        proc_table[i].ticks = proc_table[i].priority = priority ;
 
         top_stack -= task->stack_size ;
 
@@ -81,16 +86,9 @@ void init_process_main()
         selector_ldt += (1 << 3) ;
     }
 
-    proc_table[0].ticks = proc_table[0].priority = 15 ;
-    proc_table[1].ticks = proc_table[1].priority = 5 ;
-    proc_table[2].ticks = proc_table[2].priority = 5 ;
-    proc_table[3].ticks = proc_table[3].priority = 5 ;
-
-    proc_table[1].console_id = 0 ;
-    proc_table[2].console_id = 1 ;
+    proc_table[2].console_id = 0 ;
     proc_table[3].console_id = 1 ;
-
-
+    proc_table[4].console_id = 1 ;
 
     process_ready = proc_table ;
     int_reenter = 0 ;
@@ -106,6 +104,7 @@ void init_process_main()
 void process_schedule()
 {
     int biggest_tick = 0 ;
+
     while(!biggest_tick)
     {
         for (PROCESS *p = proc_table ; p < proc_table+TOTAL_TASK_CNT ; ++p)
@@ -127,8 +126,25 @@ void process_schedule()
     }
 }
 
+int ldt_linear_addr(PROCESS *p, int index)
+{
+    return p->ldt[index].base_high << 24 | p->ldt[index].base_mid << 16 | p->ldt[index].base_low ;
+}
 
-extern int get_ticks() ;
+void* vir_to_phy(int pid, void* vir_addr)
+{
+
+    uint32_t seg_base = ldt_linear_addr(&proc_table[pid], INDEX_LDT_RW);
+    uint32_t linear_addr = seg_base + (uint32_t)vir_addr;
+
+    if (pid < TOTAL_TASK_CNT) {
+        //ASSERT(linear_addr == (uint32_t)vir_addr);
+    }
+
+    return (void*)linear_addr;
+}
+
+
 void process_A()
 {
     while (true)

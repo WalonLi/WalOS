@@ -6,15 +6,20 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
+#define DEBUG_MODE
 #include "lib/common.h"
 
-#ifdef ASSERT
+
+#ifdef DEBUG_MODE
 void assert_failure(char *exp, char *file, char *base_file, int line) ;
-#define ASSERT(exp) if(!exp) \
-                        assert_failure(#exp, __FILE__, __BASE_FILE__, __LINE__) ; \
-                    else ;
+#define ASSERT(exp) if(exp) ; \
+                    else assert_failure(#exp, __FILE__, __BASE_FILE__, __LINE__)
+
+void CRITICAL(const char *fmt, ...) ;
+
 #else
 #define ASSERT(exp)
+#define CRITICAL(exp)
 #endif
 
 #define MAGIC_CH_CRITICAL   '\002'

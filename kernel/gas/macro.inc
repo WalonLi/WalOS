@@ -59,8 +59,9 @@
 
 # software interrupt
 .set    INT_VECTOR_SYS_CALL,    0x90
-.set    GET_TICKS_INDEX,        0x0
-.set    WRITE_INDEX,            0x1
-.set    SEND_RECV_INDEX,        0x2
+.set    GET_TICKS_INDEX,        0x2
+#.set    WRITE_INDEX,            0x1
+.set    PRINTX_INDEX,           0x0
+.set    SEND_RECV_INDEX,        0x1
 
 

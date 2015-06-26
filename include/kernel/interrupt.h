@@ -82,12 +82,13 @@ void    keyboard_int_handler(int irq) ;
 void    read_keyboard() ;
 
 // SOFTWARE
-#define SYS_CALL_TBL_CNT    2
+#define SYS_CALL_TBL_CNT    3
 #define INT_VECTOR_SYS_CALL 0x90
 void    sys_call() ;
-int     sys_get_ticks() ;
-int     sys_write(char *buf, int len, PROCESS *proc) ;
-int     sys_send_recv(int func, int src_dest, MESSAGE *msg, PROCESS *p) ;
+int     sys_get_ticks(int un1, int un2, int un3, int un4) ;
+//int     sys_write(char *buf, int len, PROCESS *proc) ;
+int     sys_printx(int un1, int un2, char *msg, PROCESS *proc) ;
+int     sys_send_recv(int func, int src_dest, MESSAGE *msg, PROCESS *proc) ;
 
 void    init_sw_interrupt_idt() ;
 

@@ -55,7 +55,7 @@ typedef struct _TASK
 
 #define RING0_TASK_CNT      0
 
-#define KRNL_TASK_CNT       1
+#define KRNL_TASK_CNT       2
 #define RING1_TASK_CNT      KRNL_TASK_CNT + 0
 
 #define RING2_TASK_CNT      0
@@ -66,10 +66,11 @@ typedef struct _TASK
 #define TOTAL_TASK_CNT      (RING0_TASK_CNT + RING1_TASK_CNT + RING2_TASK_CNT + RING3_TASK_CNT)
 
 #define STACK_SIZE_CONSOLE  0x8000
+#define STACK_SIZE_SYS      0x8000
 #define STACK_SIZE_PROC_A   0x8000
 #define STACK_SIZE_PROC_B   0x8000
 #define STACK_SIZE_PROC_C   0x8000
-#define STACK_SIZE          STACK_SIZE_PROC_A + STACK_SIZE_PROC_B + STACK_SIZE_PROC_C
+#define STACK_SIZE          STACK_SIZE_PROC_A + STACK_SIZE_PROC_B + STACK_SIZE_PROC_C + STACK_SIZE_CONSOLE + STACK_SIZE_SYS
 //#define STACK_SIZE          STACK_SIZE_PROC_A
 
 
@@ -78,6 +79,7 @@ typedef struct _TASK
 void init_process_main() ;
 void process_schedule() ;
 void restart_process() ;
+void* vir_to_phy(int pid, void* vir_addr) ;
 
 
 #endif
