@@ -52,10 +52,10 @@ void init_process_main()
         }
 
 
-        proc_table[i].p_id = i ;
+        proc_table[i].id = i ;
         proc_table[i].console_id = 0 ;
 
-        strcpy(proc_table[i].p_name, task->name) ;
+        strcpy(proc_table[i].name, task->name) ;
 
         proc_table[i].ldt_sel = selector_ldt ;
 

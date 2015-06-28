@@ -51,8 +51,12 @@ typedef struct _MESSAGE{
 #define IPC_RECEIVE 0x1
 #define IPC_BOTH    0x2 // not support
 
-int msg_send(PROCESS *proc, int src_dest, MESSAGE *msg) ;
-int msg_recv(PROCESS *proc, int src_dest, MESSAGE *msg) ;
+#define MSG_SENDING 0x2
+#define MSG_RECVING 0x4
+
+int msg_send(PROCESS *p_send, int dest, MESSAGE *msg) ;
+int msg_recv(PROCESS *p_recv, int src, MESSAGE *msg) ;
 int msg_both(PROCESS *proc, int src_dest, MESSAGE *msg) ;
+bool dead_lock(int src, int dest) ;
 
 #endif // __MESSAGE_H__

@@ -41,19 +41,19 @@ typedef struct _PROCESS
     DESCRIPTOR      ldt[LDT_SIZE] ;
     int             ticks ;
     int             priority ;
-    uint32_t        p_id ;
-    char            p_name[16] ;
+    uint32_t        id ;
+    char            name[16] ;
 
     // new
     int             flags ;
-    struct MESSAGE  *msg ;
+    struct _MESSAGE *msg ;
     int             recv_from ;
     int             send_to ;
     bool            have_int_msg ;
 
     // Have a send queue to handle message.
-    struct PROCESS  *current_send ;
-    struct PROCESS  *next_send ;
+    struct _PROCESS *current_send ;
+    struct _PROCESS *next_send ;
 
     int             console_id ;
 } PROCESS;
@@ -87,7 +87,9 @@ typedef struct _TASK
 //#define STACK_SIZE          STACK_SIZE_PROC_A
 
 
-#define GET_PROCESS_ID(p) (p-proc_table)
+#define GET_PROCESS_ID(p)   (p-proc_table)
+#define P_ANY               (TOTAL_TASK_CNT+100)
+#define P_NO_TASK           (TOTAL_TASK_CNT+200)
 
 void init_process_main() ;
 void process_schedule() ;
