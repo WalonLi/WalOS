@@ -9,7 +9,9 @@
 #include "kernel/keyboard.h"
 #include "kernel/vga.h"
 #include "kernel/console.h"
+#include "kernel/process.h"
 #include "lib/common.h"
+#include "lib/string.h"
 #include "lib/debug.h"
 
 static KB_INPUT kb_in ;
@@ -488,9 +490,14 @@ void init_sw_interrupt_idt()
 }
 
 
-int sys_get_ticks(int un1, int un2, int un3, int un4)
+int get_ticks(int un1, int un2, int un3, int un4)
 {
-    return ticks ;
+    MESSAGE msg ;
+    memset(&msg, 0, sizeof(MESSAGE)) ;
+
+    msg.type = GET_TICKS ;
+    p_send_recv(IPC_BOTH, 1, &msg) ; //system task
+    return msg.RETVAL ;
 }
 #if 0
 extern void console_write(int con_id, char *buf, int len) ;

@@ -10,6 +10,7 @@
 #include "type.h"
 #include "lib/debug.h"
 #include "kernel/process.h"
+
 /**
  * MESSAGE mechanism is borrowed from MINIX
  */
@@ -46,6 +47,7 @@ typedef struct _MESSAGE{
 	} u;
 } MESSAGE;
 
+#define	RETVAL		u.m3.m3i1
 
 #define IPC_SEND    0x0
 #define IPC_RECEIVE 0x1
@@ -58,5 +60,18 @@ int msg_send(PROCESS *p_send, int dest, MESSAGE *msg) ;
 int msg_recv(PROCESS *p_recv, int src, MESSAGE *msg) ;
 int msg_both(PROCESS *proc, int src_dest, MESSAGE *msg) ;
 bool dead_lock(int src, int dest) ;
+
+int p_send_recv(int func, int src_dest, MESSAGE *msg) ;
+
+enum msgtype {
+	/*
+	 * when hard interrupt occurs, a msg (with type==HARD_INT) will
+	 * be sent to some tasks
+	 */
+	HARD_INT = 1,
+
+	/* SYS task */
+	GET_TICKS,
+};
 
 #endif // __MESSAGE_H__

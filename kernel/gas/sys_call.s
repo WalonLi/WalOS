@@ -9,14 +9,13 @@
 
 .text
 
-.global     get_ticks
 .global     printx
 .global     send_recv
 
-get_ticks:
-    mov     $GET_TICKS_INDEX, %eax
-    int     $INT_VECTOR_SYS_CALL
-    ret
+#get_ticks:
+#    mov     $GET_TICKS_INDEX, %eax
+#    int     $INT_VECTOR_SYS_CALL
+#    ret
 
 #write:
 #    mov     $WRITE_INDEX,  %eax

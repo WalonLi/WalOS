@@ -83,7 +83,7 @@ void    keyboard_int_handler(int irq) ;
 void    read_keyboard() ;
 
 // SOFTWARE
-#define SYS_CALL_TBL_CNT    3
+#define SYS_CALL_TBL_CNT    2
 #define INT_VECTOR_SYS_CALL 0x90
 void    sys_call() ;
 int     sys_get_ticks(int un1, int un2, int un3, int un4) ;

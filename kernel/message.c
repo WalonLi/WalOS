@@ -70,21 +70,15 @@ int msg_send(PROCESS *p_send, int dest, MESSAGE *msg)
     return 0 ;
 }
 
-enum msgtype {
-	/*
-	 * when hard interrupt occurs, a msg (with type==HARD_INT) will
-	 * be sent to some tasks
-	 */
-	HARD_INT = 1,
 
-	/* SYS task */
-	GET_TICKS,
-};
 
 #define INTERRUPT -10
 #define INVALID_DRIVER -20
 int msg_recv(PROCESS *p_recv, int src, MESSAGE *msg)
 {
+    bool copy = false ;
+    PROCESS *p_from = null, *p_prev = null;
+
     ASSERT(p_recv->id != src) ;
 
 
@@ -98,6 +92,67 @@ int msg_recv(PROCESS *p_recv, int src, MESSAGE *msg)
 
         memcpy(vir_to_linear(p_recv->id, msg), &int_msg, sizeof(MESSAGE)) ;
         p_recv->have_int_msg = false;
+        return 0 ;
+    }
+
+    if (src == P_ANY)
+    {
+        if (p_recv->current_send)
+        {
+            p_from = p_recv->current_send ;
+            copy = true ;
+        }
+    }
+    else
+    {
+        p_from = &proc_table[src] ;
+        if ((p_from->flags & MSG_SENDING) && (p_from->send_to == p_recv->id))
+        {
+            copy = true ;
+
+            PROCESS *p = p_recv->current_send ;
+
+            while (p)
+            {
+                if (p->id == src)
+                {
+                    p_from = p ;
+                    break ;
+                }
+                p_prev = p ;
+                p = p->next_send ;
+            }
+        }
+    }
+
+    if (copy)
+    {
+        if (p_from == p_recv->current_send)
+        {
+            p_recv->current_send = p_from->next_send ;
+            p_from->next_send = null ;
+        }
+        else
+        {
+            p_prev->next_send = p_from->next_send ;
+            p_from->next_send = null ;
+        }
+
+        memcpy(vir_to_linear(p_recv->id, msg), vir_to_linear(p_from->id, p_from->msg), sizeof(MESSAGE)) ;
+        p_from->msg = null ;
+        p_from->send_to = P_NO_TASK ;
+        p_from->flags &= ~MSG_SENDING ;
+        unblock(p_from) ;
+    }
+    else
+    {
+        p_recv->flags |= MSG_RECVING ;
+        p_recv->msg = msg ;
+
+        if (src == P_ANY)
+            p_recv->recv_from = P_ANY ;
+        else
+            p_recv->recv_from = p_from->id ;
     }
 
     return 0 ;
@@ -141,4 +196,29 @@ bool dead_lock(int src, int dest)
         }
     }
     return false ;
+}
+
+
+int	send_recv(int function, int src_dest, MESSAGE* p_msg);
+int p_send_recv(int func, int src_dest, MESSAGE *msg)
+{
+    int ret = 0 ;
+
+    if (func == IPC_RECEIVE)
+        memset(msg, 0, sizeof(struct _MESSAGE)) ;
+
+    switch (func)
+    {
+    case IPC_BOTH:
+        ret = send_recv(IPC_SEND, src_dest, msg) ;
+        if (ret == 0) ret = send_recv(IPC_RECEIVE, src_dest, msg) ;
+        break ;
+    case IPC_SEND:
+    case IPC_RECEIVE:
+        ret = send_recv(func, src_dest, msg) ;
+        break ;
+    default:
+        break ;
+    }
+    return 0 ;
 }

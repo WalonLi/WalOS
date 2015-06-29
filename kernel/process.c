@@ -109,10 +109,13 @@ void process_schedule()
     {
         for (PROCESS *p = proc_table ; p < proc_table+TOTAL_TASK_CNT ; ++p)
         {
-            if (p->ticks > biggest_tick)
+            if (p->flags == 0)
             {
-                biggest_tick = p->ticks ;
-                process_ready = p ;
+                if (p->ticks > biggest_tick)
+                {
+                    biggest_tick = p->ticks ;
+                    process_ready = p ;
+                }
             }
         }
 
@@ -120,7 +123,8 @@ void process_schedule()
         {
             for (PROCESS *p = proc_table ; p < proc_table + TOTAL_TASK_CNT ;++p)
             {
-                p->ticks = p->priority ;
+                if (p->flags == 0)
+                    p->ticks = p->priority ;
             }
         }
     }

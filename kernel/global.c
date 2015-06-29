@@ -36,7 +36,7 @@ TASK        r3_task_table[RING3_TASK_CNT] = {{process_A, STACK_SIZE_PROC_A, "P_A
 int         int_reenter = 0 ;
 irq_handler irq_table[IRQ_CNT];
 
-void        *sys_call_table[SYS_CALL_TBL_CNT] = { sys_printx, sys_send_recv, sys_get_ticks } ;
+void        *sys_call_table[SYS_CALL_TBL_CNT] = { sys_printx, sys_send_recv } ;
 
 int         ticks = 1 ;
 
