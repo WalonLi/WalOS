@@ -8,7 +8,75 @@
 
 #include "type.h"
 #include "kernel/core.h"
-//#include "kernel/message.h"
+
+
+typedef struct _MESSAGE MESSAGE ;
+typedef struct _PROCESS PROCESS ;
+
+/**
+ * MESSAGE mechanism is borrowed from MINIX
+ */
+struct mess1 {
+	int m1i1;
+	int m1i2;
+	int m1i3;
+	int m1i4;
+};
+struct mess2 {
+	void* m2p1;
+	void* m2p2;
+	void* m2p3;
+	void* m2p4;
+};
+struct mess3 {
+	int	m3i1;
+	int	m3i2;
+	int	m3i3;
+	int	m3i4;
+	uint64_t	m3l1;
+	uint64_t	m3l2;
+	void*	m3p1;
+	void*	m3p2;
+};
+
+struct _MESSAGE{
+	int source;
+	int type;
+	union {
+		struct mess1 m1;
+		struct mess2 m2;
+		struct mess3 m3;
+	} u;
+};
+
+// #define	RETVAL		u.m3.m3i1
+
+#define MSG_SEND    0x0
+#define MSG_RECEIVE 0x1
+#define MSG_BOTH    0x2
+
+// Process Flags
+#define MSG_SENDING 0x2
+#define MSG_RECVING 0x4
+
+int msg_send(PROCESS *p_send, int dest, MESSAGE *msg) ;
+int msg_recv(PROCESS *p_recv, int src, MESSAGE *msg) ;
+int msg_both(PROCESS *proc, int src_dest, MESSAGE *msg) ;
+bool dead_lock(int src, int dest) ;
+
+int send_recv(int func, int src_dest, MESSAGE *msg) ;
+
+#define MSG_SOURCE_INTERRUPT    -10
+#define MSG_SOURCE_INVALID_DRIVER  -20
+enum msg_type {
+	// when hard interrupt occurs, a msg (with type==HARD_INT) will
+    // be sent to some tasks
+	MSG_TYPE_HW_INTERRUPT = 1,
+
+	// System task
+	MSG_TYPE_GET_TICKS,
+};
+
 
 typedef void (*task_handler)() ;
 
@@ -34,7 +102,7 @@ typedef struct _REG_STACK
     uint32_t ss ;
 } REG_STACK;
 
-typedef struct _PROCESS
+struct _PROCESS
 {
     REG_STACK       regs ;
     uint16_t        ldt_sel;
@@ -43,20 +111,20 @@ typedef struct _PROCESS
     int             priority ;
     uint32_t        id ;
     char            name[16] ;
+    int             console_id ;
 
+    // message
     // new
     int             flags ;
-    struct _MESSAGE *msg ;
+    MESSAGE         *msg ;
     int             recv_from ;
     int             send_to ;
     bool            have_int_msg ;
 
     // Have a send queue to handle message.
-    struct _PROCESS *current_send ;
-    struct _PROCESS *next_send ;
-
-    int             console_id ;
-} PROCESS;
+    PROCESS         *current_send ;
+    PROCESS         *next_send ;
+};
 
 typedef struct _TASK
 {
@@ -91,7 +159,8 @@ typedef struct _TASK
 #define P_ANY               (TOTAL_TASK_CNT+100)
 #define P_NO_TASK           (TOTAL_TASK_CNT+200)
 
-
+#define CONSOLE_TASK        0x0
+#define SYSTEM_TASK         0x1
 
 void init_process_main() ;
 void process_schedule() ;

@@ -490,15 +490,18 @@ void init_sw_interrupt_idt()
 }
 
 
-int get_ticks(int un1, int un2, int un3, int un4)
+int get_ticks()
 {
     MESSAGE msg ;
     memset(&msg, 0, sizeof(MESSAGE)) ;
 
-    msg.type = GET_TICKS ;
-    p_send_recv(IPC_BOTH, 1, &msg) ; //system task
-    return msg.RETVAL ;
+    msg.type = MSG_TYPE_GET_TICKS ;
+    send_recv(MSG_BOTH, SYSTEM_TASK, &msg) ; //system task
+
+    // u.m3.m3i1 = Return value;
+    return msg.u.m3.m3i1 ;
 }
+
 #if 0
 extern void console_write(int con_id, char *buf, int len) ;
 int sys_write(char *buf, int len, PROCESS *proc)
@@ -562,19 +565,19 @@ int sys_send_recv(int func, int src_dest, MESSAGE *msg, PROCESS *proc)
 
     int ret  = 0 ;
 
-    MESSAGE *msg_la = vir_to_linear(GET_PROCESS_ID(proc), msg) ;
-    msg_la->source = GET_PROCESS_ID(proc) ; // assign caller index to msg_la
+    MESSAGE *msg_la = vir_to_linear(proc->id, msg) ;
+    msg_la->source = proc->id ; // assign caller index to msg_la
 
     ASSERT(msg_la->source != src_dest) ; // src and dest should be different
 
     switch(func)
     {
-    case IPC_SEND:
+    case MSG_SEND:
         ret = msg_send(proc, src_dest, msg) ;
         if (ret) return ret ;
         break ;
 
-    case IPC_RECEIVE:
+    case MSG_RECEIVE:
         ret = msg_recv(proc, src_dest, msg) ;
         if (ret) return ret ;
         break ;

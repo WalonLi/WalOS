@@ -9,8 +9,8 @@
 
 .text
 
-.global     printx
-.global     send_recv
+.global     as_printx
+.global     as_send_recv
 
 #get_ticks:
 #    mov     $GET_TICKS_INDEX, %eax
@@ -24,13 +24,13 @@
 #    int     $INT_VECTOR_SYS_CALL
 #    ret
 
-printx:
+as_printx:
     mov     $PRINTX_INDEX, %eax
     mov     4(%esp),    %edx
     int     $INT_VECTOR_SYS_CALL
     ret
 
-send_recv:
+as_send_recv:
     mov     $SEND_RECV_INDEX, %eax
     mov     4(%esp),    %ebx            #function
     mov     8(%esp),    %ecx            #src_dest

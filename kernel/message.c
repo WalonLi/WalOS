@@ -4,22 +4,22 @@
 **/
 
 
-#include "kernel/message.h"
+#include "kernel/process.h"
 #include "kernel/global.h"
 #include "lib/string.h"
+#include "lib/debug.h"
 
 extern void process_schedule() ;
 void block(PROCESS *proc)
 {
     ASSERT(proc->flags) ;
-    process_schedule() ;
+    process_schedule() ; // re schedule
 }
 
 void unblock(PROCESS *proc)
 {
     ASSERT(!proc->flags) ;
 }
-
 
 
 int msg_send(PROCESS *p_send, int dest, MESSAGE *msg)
@@ -33,7 +33,7 @@ int msg_send(PROCESS *p_send, int dest, MESSAGE *msg)
 
     if ((p_dest->flags & MSG_RECVING) && (p_dest->recv_from == p_send->id || p_dest->recv_from == P_ANY))
     {
-        // dest is waiting for message
+        // send message directly.
         ASSERT(p_dest->msg) ;
         ASSERT(msg) ;
 
@@ -50,6 +50,7 @@ int msg_send(PROCESS *p_send, int dest, MESSAGE *msg)
         p_send->send_to = dest ;
         p_send->msg = msg ;
 
+        // add to queue
         if (p_dest->current_send)
         {
             for (PROCESS *p = p_dest->current_send ; ; p = p->next_send)
@@ -70,25 +71,22 @@ int msg_send(PROCESS *p_send, int dest, MESSAGE *msg)
     return 0 ;
 }
 
-
-
-#define INTERRUPT -10
-#define INVALID_DRIVER -20
 int msg_recv(PROCESS *p_recv, int src, MESSAGE *msg)
 {
     bool copy = false ;
-    PROCESS *p_from = null, *p_prev = null;
+    PROCESS *p_src = null, *p_prev = null;
 
     ASSERT(p_recv->id != src) ;
 
 
-    if (p_recv->have_int_msg && (src == P_ANY || src == INTERRUPT))
+    if (p_recv->have_int_msg && (src == P_ANY || src == MSG_SOURCE_INTERRUPT))
     {
-        // handle interrupt message
+        // some interrupt need IPC to transfer message
+        // so handle hardware interrupt message
         MESSAGE int_msg ;
         memset(&int_msg, '\0', sizeof(MESSAGE)) ;
-        int_msg.source = INTERRUPT ;
-        int_msg.type = HARD_INT ;
+        int_msg.source = MSG_SOURCE_INTERRUPT ;
+        int_msg.type = MSG_TYPE_HW_INTERRUPT ;
 
         memcpy(vir_to_linear(p_recv->id, msg), &int_msg, sizeof(MESSAGE)) ;
         p_recv->have_int_msg = false;
@@ -99,67 +97,63 @@ int msg_recv(PROCESS *p_recv, int src, MESSAGE *msg)
     {
         if (p_recv->current_send)
         {
-            p_from = p_recv->current_send ;
+            // get message process by queue
+            p_src = p_recv->current_send ;
             copy = true ;
         }
     }
     else
     {
-        p_from = &proc_table[src] ;
-        if ((p_from->flags & MSG_SENDING) && (p_from->send_to == p_recv->id))
+        p_src = &proc_table[src] ;
+        if ((p_src->flags & MSG_SENDING) && (p_src->send_to == p_recv->id))
         {
             copy = true ;
 
-            PROCESS *p = p_recv->current_send ;
-
-            while (p)
+            ASSERT(p_recv->current_send) ;
+            for (PROCESS *p = p_recv->current_send ; p ; p = p->next_send)
             {
                 if (p->id == src)
                 {
-                    p_from = p ;
+                    p_src = p ;
                     break ;
                 }
                 p_prev = p ;
-                p = p->next_send ;
             }
         }
     }
 
     if (copy)
     {
-        if (p_from == p_recv->current_send)
-        {
-            p_recv->current_send = p_from->next_send ;
-            p_from->next_send = null ;
-        }
+        // prepare next send into queue
+        if (p_src == p_recv->current_send)
+            p_recv->current_send = p_src->next_send ;
         else
-        {
-            p_prev->next_send = p_from->next_send ;
-            p_from->next_send = null ;
-        }
+            p_prev->next_send = p_src->next_send ;
 
-        memcpy(vir_to_linear(p_recv->id, msg), vir_to_linear(p_from->id, p_from->msg), sizeof(MESSAGE)) ;
-        p_from->msg = null ;
-        p_from->send_to = P_NO_TASK ;
-        p_from->flags &= ~MSG_SENDING ;
-        unblock(p_from) ;
+        p_src->next_send = null ;
+
+
+        memcpy(vir_to_linear(p_recv->id, msg), vir_to_linear(p_src->id, p_src->msg), sizeof(MESSAGE)) ;
+        p_src->msg = null ;
+        p_src->send_to = P_NO_TASK ;
+        p_src->flags &= ~MSG_SENDING ;
+        unblock(p_src) ;
     }
     else
     {
+        // nobody sending meesage, so restore it.
         p_recv->flags |= MSG_RECVING ;
         p_recv->msg = msg ;
-
-        if (src == P_ANY)
-            p_recv->recv_from = P_ANY ;
-        else
-            p_recv->recv_from = p_from->id ;
+        p_recv->recv_from = src ;
+        // p_recv->recv_from = (src == P_ANY) ? P_ANY : p_src->id ;
+        block(p_recv) ;
     }
-
     return 0 ;
 }
 
 int msg_both(PROCESS *proc, int src_dest, MESSAGE *msg)
 {
+    // not support on message.c
     return 0 ;
 }
 
@@ -168,7 +162,6 @@ int msg_both(PROCESS *proc, int src_dest, MESSAGE *msg)
 */
 bool dead_lock(int src, int dest)
 {
-
     ASSERT(src != dest) ;
 
     PROCESS *proc = &proc_table[dest] ;
@@ -198,24 +191,27 @@ bool dead_lock(int src, int dest)
     return false ;
 }
 
-
-int	send_recv(int function, int src_dest, MESSAGE* p_msg);
-int p_send_recv(int func, int src_dest, MESSAGE *msg)
+/*
+    send_recv will call as_send_recv, this function enhance function.
+    and also avoid to use as_send_recv directly.
+*/
+int	as_send_recv(int function, int src_dest, MESSAGE* p_msg);
+int send_recv(int func, int src_dest, MESSAGE *msg)
 {
     int ret = 0 ;
 
-    if (func == IPC_RECEIVE)
+    if (func == MSG_RECEIVE)
         memset(msg, 0, sizeof(struct _MESSAGE)) ;
 
     switch (func)
     {
-    case IPC_BOTH:
-        ret = send_recv(IPC_SEND, src_dest, msg) ;
-        if (ret == 0) ret = send_recv(IPC_RECEIVE, src_dest, msg) ;
+    case MSG_BOTH:
+        ret = as_send_recv(MSG_SEND, src_dest, msg) ;
+        if (ret == 0) ret = as_send_recv(MSG_RECEIVE, src_dest, msg) ;
         break ;
-    case IPC_SEND:
-    case IPC_RECEIVE:
-        ret = send_recv(func, src_dest, msg) ;
+    case MSG_SEND:
+    case MSG_RECEIVE:
+        ret = as_send_recv(func, src_dest, msg) ;
         break ;
     default:
         break ;

@@ -109,7 +109,7 @@ void process_schedule()
     {
         for (PROCESS *p = proc_table ; p < proc_table+TOTAL_TASK_CNT ; ++p)
         {
-            if (p->flags == 0)
+            if (p->flags == 0) // no message need transfer
             {
                 if (p->ticks > biggest_tick)
                 {
@@ -123,7 +123,7 @@ void process_schedule()
         {
             for (PROCESS *p = proc_table ; p < proc_table + TOTAL_TASK_CNT ;++p)
             {
-                if (p->flags == 0)
+                if (p->flags == 0) // no message need transfer
                     p->ticks = p->priority ;
             }
         }
@@ -148,12 +148,12 @@ void* vir_to_linear(int pid, void* vir_addr)
     return (void*)linear_addr;
 }
 
-
+extern int get_ticks() ;
 void process_A()
 {
     while (true)
     {
-        printf("A:") ;
+        printf("A: ticks:%d ", get_ticks()) ;
         delay(300) ;
     }
 }

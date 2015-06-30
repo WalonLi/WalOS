@@ -104,7 +104,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
     return (p - buf) ;
 }
 
-extern void printx(char *buf) ;
+extern void as_printx(char *buf) ;
 int printf(const char *fmt, ...)
 {
     int i ;
@@ -112,7 +112,7 @@ int printf(const char *fmt, ...)
 
     va_list arg = (va_list)((char*)(&fmt) + 4) ;
     i = vsprintf(buf, fmt, arg) ;
-    printx(buf) ; // call system call
+    as_printx(buf) ; // call system call
     return i ;
 }
 

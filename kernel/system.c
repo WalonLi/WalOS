@@ -6,23 +6,22 @@
 #include "kernel/process.h"
 #include "lib/common.h"
 #include "lib/string.h"
-#include "kernel/message.h"
 #include "lib/debug.h"
 
-extern int send_recv(int function, int src_dest, MESSAGE* p_msg);
 void sys_task()
 {
     MESSAGE msg ;
     while(true)
     {
-        p_send_recv(IPC_RECEIVE, P_ANY, &msg) ;
+        send_recv(MSG_RECEIVE, P_ANY, &msg) ;
         int src = msg.source ;
 
         switch (msg.type)
         {
-        case GET_TICKS:
-            msg.RETVAL = ticks ;
-            p_send_recv(IPC_SEND, src, &msg) ;
+        case MSG_TYPE_GET_TICKS:
+            // u.m3.m3i1 = Return value;
+            msg.u.m3.m3i1 = ticks ;
+            send_recv(MSG_SEND, src, &msg) ;
             break ;
         default:
             CRITICAL("fuck....") ;

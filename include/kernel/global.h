@@ -39,4 +39,9 @@ extern int          ticks ;
 
 extern uint32_t     key_map[] ;
 
+// system call
+int printf(const char *fmt, ...) ;
+int send_recv(int func, int src_dest, MESSAGE *msg) ;
+
+
 #endif

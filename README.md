@@ -25,6 +25,16 @@ $ ./start.sh
 [Executable and Linkable Format (ELF) document](http://flint.cs.yale.edu/cs422/doc/ELF_Format.pdf)
 
 ----
+#####System call(6/30)
+```
+printx      (for print message on console)
+send_recv   (for IPC)
+    |
+    ---- MSG_TYPE_HW_INTERRUPT
+    |
+    ---- MSG_TYPE_GET_TICKS
+```
+
 #####Current Flow(6/26)
 ```
             -------------------------------------------------------
