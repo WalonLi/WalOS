@@ -47,6 +47,7 @@
 		<Unit filename="include/kernel/core.h" />
 		<Unit filename="include/kernel/exception.h" />
 		<Unit filename="include/kernel/global.h" />
+		<Unit filename="include/kernel/hdd.h" />
 		<Unit filename="include/kernel/interrupt.h" />
 		<Unit filename="include/kernel/io.h" />
 		<Unit filename="include/kernel/keyboard.h" />
@@ -74,6 +75,9 @@
 		<Unit filename="kernel/gas/macro.inc" />
 		<Unit filename="kernel/gas/sys_call.s" />
 		<Unit filename="kernel/global.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/hdd.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="kernel/interrupt.c">

@@ -27,7 +27,7 @@ $ ./start.sh
 ----
 #####System call(6/30)
 ```
-printx      (for print message on console)
+printf      (for print message on console)
 send_recv   (for IPC)
     |
     ---- MSG_TYPE_HW_INTERRUPT
@@ -42,26 +42,26 @@ BootSector  |       Boot to BootSector
             |
             |       Load loader
 Loader      |       Jump to loader
-            |       
+            |
             |       Load kernel
 Kernel      |       Jump to kernel
-            |   
-            |       Initial and switch to kernel GDT 
-            |       
+            |
+            |       Initial and switch to kernel GDT
+            |
             |       Initial hardware interrupt controller(8259A)
             |       Initial software interrupt(system call)
             |       Initial IDT
             |       Initial TSS and LDT descriptor in GDT.
-            |       
+            |
             |
             |
             |       Initial Process Table
             |       Initial Clock interrupt
-            |       
+            |
             |       Prepare printx/send_recv system call.
             |       Prepare IPC(doing now)
             |       Process start...
-            |       
+            |
             -------------------------------------------------------
 ```
 
@@ -72,32 +72,32 @@ Kernel      |       Jump to kernel
 #####Memory Layout(5/17)
 ```
         -------------------------
-        |                       |        
+        |                       |
         |     Page Tables       |
 0x101000|-----------------------|
         |        PDT            |
 0x100000|-----------------------|
         |                       |
-        |     Hardware          |        
+        |     Hardware          |
         |        Reserved       |
         |                       |
-        |-----------------------|        
+        |-----------------------|
         |        EBDA           |
         |-----------------------|
-        |     loader.bin        |        
+        |     loader.bin        |
         |                       |
 0x90000 |-----------------------|
-        |     kernel.bin        |        
+        |     kernel.bin        |
         |                       |
 0x80000 |-----------------------|
-        |     kernel            |        
+        |     kernel            |
         |           Entry       |
 0x30000 |-----------------------|
-        |                       |        
         |                       |
-        |                       |        
         |                       |
-        |                       |        
+        |                       |
+        |                       |
+        |                       |
         |                       |
 0x0     -------------------------
 ```

@@ -59,6 +59,8 @@ struct _MESSAGE{
 #define MSG_SENDING 0x2
 #define MSG_RECVING 0x4
 
+void block(PROCESS *proc) ;
+void unblock(PROCESS *proc) ;
 int msg_send(PROCESS *p_send, int dest, MESSAGE *msg) ;
 int msg_recv(PROCESS *p_recv, int src, MESSAGE *msg) ;
 int msg_both(PROCESS *proc, int src_dest, MESSAGE *msg) ;
@@ -75,6 +77,7 @@ enum msg_type {
 
 	// System task
 	MSG_TYPE_GET_TICKS,
+	MSG_TYPE_DEV_OPEN,
 };
 
 
@@ -136,7 +139,7 @@ typedef struct _TASK
 
 #define RING0_TASK_CNT      0
 
-#define KRNL_TASK_CNT       2
+#define KRNL_TASK_CNT       3
 #define RING1_TASK_CNT      KRNL_TASK_CNT + 0
 
 #define RING2_TASK_CNT      0
@@ -148,10 +151,12 @@ typedef struct _TASK
 
 #define STACK_SIZE_CONSOLE  0x8000
 #define STACK_SIZE_SYS      0x8000
+#define STACK_SIZE_HDD      0x8000
 #define STACK_SIZE_PROC_A   0x8000
 #define STACK_SIZE_PROC_B   0x8000
 #define STACK_SIZE_PROC_C   0x8000
-#define STACK_SIZE          STACK_SIZE_PROC_A + STACK_SIZE_PROC_B + STACK_SIZE_PROC_C + STACK_SIZE_CONSOLE + STACK_SIZE_SYS
+#define STACK_SIZE          STACK_SIZE_PROC_A + STACK_SIZE_PROC_B + STACK_SIZE_PROC_C \
+                            + STACK_SIZE_CONSOLE + STACK_SIZE_SYS + STACK_SIZE_HDD
 //#define STACK_SIZE          STACK_SIZE_PROC_A
 
 
@@ -161,12 +166,14 @@ typedef struct _TASK
 
 #define CONSOLE_TASK        0x0
 #define SYSTEM_TASK         0x1
+#define HDD_TASK            0x2
 
 void init_process_main() ;
 void process_schedule() ;
 void restart_process() ;
 int ldt_linear_addr(PROCESS *p, int index) ;
 void* vir_to_linear(int pid, void* vir_addr) ;
+void deliver_int_to_proc(int n_task) ;
 
 
 #endif

@@ -4,6 +4,7 @@
 **/
 #include "kernel/global.h"
 #include "kernel/process.h"
+#include "kernel/message.h"
 #include "lib/common.h"
 #include "lib/string.h"
 #include "lib/debug.h"
@@ -146,6 +147,26 @@ void* vir_to_linear(int pid, void* vir_addr)
     }
 
     return (void*)linear_addr;
+}
+
+void deliver_int_to_proc(int n_task)
+{
+    PROCESS *proc = &proc_table[n_task] ;
+    if ((proc->flags & MSG_RECVING)
+        && (proc->recv_from == MSG_SOURCE_INTERRUPT || proc->recv_from == P_ANY))
+    {
+        proc->msg->source = MSG_SOURCE_INTERRUPT ;
+        proc->msg->type = MSG_TYPE_HW_INTERRUPT ;
+        proc->msg = null ;
+        proc->have_int_msg = false ;
+        proc->flags &= ~MSG_RECVING ;
+        proc->recv_from = P_NO_TASK ;
+        unblock(proc) ;
+    }
+    else
+    {
+        proc->have_int_msg = true ;
+    }
 }
 
 extern int get_ticks() ;

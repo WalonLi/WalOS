@@ -24,7 +24,7 @@ void sys_task()
             send_recv(MSG_SEND, src, &msg) ;
             break ;
         default:
-            CRITICAL("fuck....") ;
+            CRITICAL("sys_task") ;
             break ;
         }
     }

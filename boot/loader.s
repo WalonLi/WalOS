@@ -18,9 +18,9 @@
 #                         #
 ###########################
 #   GDT                         BASE            LIMIT               ATTR
-LABEL_GDT:      Descriptor      0,              0,                  0          
+LABEL_GDT:      Descriptor      0,              0,                  0
 LABEL_FLAT_C_DESC:  Descriptor  0,              0xfffff,            (DA_CR + DA_32 + DA_LIMIT_4K)
-LABEL_FLAT_RW_DESC: Descriptor  0,              0xfffff,            (DA_DRW + DA_32 + DA_LIMIT_4K) 
+LABEL_FLAT_RW_DESC: Descriptor  0,              0xfffff,            (DA_DRW + DA_32 + DA_LIMIT_4K)
 LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             (DA_DRW+DA_DPL3)
 
 # don't initial in code 16
@@ -30,7 +30,7 @@ LABEL_VIDEO_DESC:   Descriptor  0xb8000,        0xffff,             (DA_DRW+DA_D
 
 .set        GdtLen,     . - LABEL_GDT
 GdtPtr:     .2byte      GdtLen - 1
-            .4byte      BaseOfLoaderPhyAddr + LABEL_GDT      
+            .4byte      BaseOfLoaderPhyAddr + LABEL_GDT
 
 
 
@@ -52,7 +52,7 @@ GdtPtr:     .2byte      GdtLen - 1
 
 #########################
 #   Data segment        #
-#                       #  
+#                       #
 #   Ring 0              #
 #   R/W                 #
 #########################
@@ -86,7 +86,7 @@ _PMMsg:      .asciz      "Switch to Protected mode success."
 _LDTMsg:     .asciz      "Jump to LDT segment success."
 _MemInfoMsg: .asciz      "BaseAddrL   BaseAddrH   LengthLow   LengthHigh  Type"
 _MemDataMsg: .asciz      "00000000    00000000    00000000    00000000    00000000"
-_MemSizeMsg: .asciz      "RAM size:   00000000"   
+_MemSizeMsg: .asciz      "RAM size:   00000000"
 _InterruptMsg: .asciz    "Open 8295A interrupt."
 _PageMechanicMsg: .asciz "Enable Page Mechanic."
 _PageTblCnt: .4byte      0
@@ -126,8 +126,8 @@ StackSeg:   .space      1024,        0
 .set        TopOfStack, BaseOfLoaderPhyAddr + .
 
 ##########################################################
-#   LABEL_BEGIN             
-#                            
+#   LABEL_BEGIN
+#
 #   Loader.bin real entry, do the below things.
 #   1. Initial all descriptor.
 #   2. Prepare GDTR.
@@ -145,7 +145,7 @@ LABEL_BEGIN:
     mov     %ax,        %es
     mov     $0x100,     %sp
 
-    
+
     # Get physical memory size and ARD struct
     mov     $0,         %ebx
     mov     $_MemChkBuf, %edi
@@ -170,14 +170,14 @@ mem_chk_ok:
     xor     %dh,    %dh
     int     $0x13
 
-    movw    $SecNoOfRootDir, (_gSectorNo)   
+    movw    $SecNoOfRootDir, (_gSectorNo)
 search_kernel_in_root_dir:
     cmpw    $0,         (_gRootDirSizeForLoop)   # check root dir loop
     jz      no_kernel
     decw    (_gRootDirSizeForLoop)               # loop--
 
     mov     $BaseOfKernel, %ax
-    mov     %ax,        %es                     
+    mov     %ax,        %es
     mov     $OffsetOfKernel, %bx                # es:bx
     mov     (_gSectorNo), %ax                    # %ax <- sector number
     mov     $1,         %cl                     # how many sector will be read
@@ -202,16 +202,16 @@ compare_file_name:
     dec     %cx
     lodsb                                       # %ds:(%si) -> %al
     cmp     %es:(%di),  %al
-    
-    jz      next_character      
+
+    jz      next_character
     jmp     file_name_not_match
 
 
     # file name not matched, check next 0x20 bytes
-file_name_not_match:                      
+file_name_not_match:
     and     $0xffe0,    %di
     add     $0x20,      %di
-    mov     $_KernelName, %si      
+    mov     $_KernelName, %si
     jmp     search_for_kernel_bin
 
     # compare next character
@@ -239,7 +239,7 @@ file_name_found:
     add     $0x1a,      %di                     # offset 0x1a record first sector number
     mov     %es:(%di),  %cx
     push    %cx                                 # restore first sector to stack
-    add     %ax,        %cx                     
+    add     %ax,        %cx
     add     $DeltaSecNo, %cx                    # LOADER.BIN's start sector saved in %cl
     mov     $BaseOfKernel, %ax
     mov     %ax,        %es                     # %es <- BaseOfLoader
@@ -281,7 +281,7 @@ file_loaded:
     # For prepare switch protected mode, PE bit enable
     movl    %cr0,       %eax
     orl     $1,         %eax
-    movl    %eax,       %cr0       
+    movl    %eax,       %cr0
 
     # Mixed Jump
     ljmpl   $FlatCSelector, $(BaseOfLoaderPhyAddr+LABEL_PM_BEGIN)
@@ -294,9 +294,9 @@ file_loaded:
 
 
 ##########################################################
-#   ShowMsgInRealMode          
-#        
-#   dh = Boot string table index                    
+#   ShowMsgInRealMode
+#
+#   dh = Boot string table index
 ##########################################################
 ShowMsgInRealMode:
     mov     $MsgLen,    %ax
@@ -330,13 +330,13 @@ msg_color_end:
 
     # PrintCount++
     incb    _ColCount
-    ret  
+    ret
 
 
 
 ######################################################
 #   ReadSector
-#       
+#
 #   Read %cl sector from %ax floppy sector to es:bx
 #   x/(BPB_SecPerTrk) = y
 #   x%(BPB_SecPerTrk) = z
@@ -349,16 +349,16 @@ ReadSector:
     mov     %esp,   %ebp
     sub     $2,     %esp        # Reserve 2byte space
     mov     %cl,    -2(%ebp)    # Restore cl
-    push    %bx                 
-    mov     (BPB_SecPerTrk), %bl # bl is divider 
+    push    %bx
+    mov     (BPB_SecPerTrk), %bl # bl is divider
     div     %bl                 # y in al, z in ah
     inc     %ah                 # z++, get start sector
-    mov     %ah,    %cl         
-    mov     %al,    %dh         
+    mov     %ah,    %cl
+    mov     %al,    %dh
     shr     $1,     %al         # y/BPB_Numhead
-    mov     %al,    %ch         
-    and     $1,     %dh         
-    pop     %bx     
+    mov     %al,    %ch
+    and     $1,     %dh
+    pop     %bx
 
     # %ch = cylinder number
     # %cl = start sector number
@@ -366,7 +366,7 @@ ReadSector:
     mov     (BS_DrvNum), %dl
 reading:
     mov     $2,     %ah
-    mov     -2(%ebp), %al       # Read %al sectors 
+    mov     -2(%ebp), %al       # Read %al sectors
     int     $0x13
     jc      reading             # check CF, if == 1, read again
     add     $2,%esp
@@ -383,31 +383,31 @@ GetFATEntry:
     push    %ax
     mov     $BaseOfKernel, %ax
     sub     $0x0100,    %ax
-    mov     %ax,        %es                 # Left 4K bytes for FAT 
+    mov     %ax,        %es                 # Left 4K bytes for FAT
     pop     %ax
     mov     $3,         %bx
-    mul     %bx                             # %dx:%ax = %ax*3 
+    mul     %bx                             # %dx:%ax = %ax*3
     mov     $2,         %bx
-    div     %bx                             # %dx:%ax/2 
-    movb    %dl,        (_gOdd)              # store remainder %dx in label bOdd. 
-    
-    xor     %dx,        %dx                 # Now %ax is the offset of FATEntry in FAT 
+    div     %bx                             # %dx:%ax/2
+    movb    %dl,        (_gOdd)              # store remainder %dx in label bOdd.
+
+    xor     %dx,        %dx                 # Now %ax is the offset of FATEntry in FAT
     mov     (BPB_BytsPerSec), %bx
-    div     %bx                             # %dx:%ax/BPB_BytsPerSec 
+    div     %bx                             # %dx:%ax/BPB_BytsPerSec
     push    %dx
     mov     $0,         %bx
-    add     $SecNoOfFAT1, %ax               # %ax <- FATEntry sector 
-    mov     $2,         %cl                 # Read 2 sectors in 1 time, because FATEntry 
-    call    ReadSector                      # may be in 2 sectors. 
+    add     $SecNoOfFAT1, %ax               # %ax <- FATEntry sector
+    mov     $2,         %cl                 # Read 2 sectors in 1 time, because FATEntry
+    call    ReadSector                      # may be in 2 sectors.
     pop     %dx
     add     %dx,        %bx
-    mov     %es:(%bx),  %ax                 # read FAT entry by word(2 bytes) 
+    mov     %es:(%bx),  %ax                 # read FAT entry by word(2 bytes)
     cmpb    $0,         (_gOdd)             # remainder %dx(see above) == 0 ?
-    jz      even_2                          # NOTE: %ah: high address byte, %al: low byte 
+    jz      even_2                          # NOTE: %ah: high address byte, %al: low byte
     shr     $4,         %ax
 even_2:
     and     $0x0fff,    %ax
-    
+
     pop     %bx
     pop     %es
     ret
@@ -423,9 +423,9 @@ CloseMotor:
 
 
 ##########################################################
-#   LABEL_CODE32_SEG        
-#                           
-#   Protected mode entry    
+#   LABEL_CODE32_SEG
+#
+#   Protected mode entry
 #   Initial ds, ss, gs, esp, TSS and do anything.
 ##########################################################
 LABEL_PM_BEGIN:
@@ -437,7 +437,7 @@ LABEL_PM_BEGIN:
     mov     $FlatRWSelector, %ax
     mov     %ax,        %ds
     mov     %ax,        %es
-    mov     %ax,        %fs 
+    mov     %ax,        %fs
     mov     %ax,        %ss
     mov     $TopOfStack, %esp
 
@@ -463,9 +463,9 @@ LABEL_PM_BEGIN:
 
 
 ##########################################################
-#   ShowMsgInProtectedMode           
-#                           
-#   Show index:%al msg              
+#   ShowMsgInProtectedMode
+#
+#   Show index:%al msg
 ##########################################################
 ShowMsgInProtectedMode:
     push    %eax
@@ -498,11 +498,11 @@ ShowMsgInProtectedMode:
 
     jmp     msg_error
 
-msg_0:    
+msg_0:
     movl    $PMMsg, %esi
     jmp     msg_end
 
-msg_1:    
+msg_1:
     movl    $LDTMsg, %esi
     jmp     msg_end
 
@@ -540,8 +540,8 @@ msg_end:
     mov     %eax,       %edi
 
     movb    $0x7,       %ah
-    
-    cld 
+
+    cld
 show_msg:
     lodsb
     cmp     $0,         %al
@@ -557,12 +557,12 @@ show_done:
     pop     %esi
     pop     %ebx
     pop     %eax
-    ret 
+    ret
 
 
 ################################################################
-#   ShowMemInfo           
-#                            
+#   ShowMemInfo
+#
 #   MemChkBuf have memory ARD(Address Range Descriptor) struct
 #   We parse this structure and show memory information on screen
 ################################################################
@@ -632,8 +632,8 @@ shf_end:
 
 
 ################################################################
-#   ALtoAscii           
-#                            
+#   ALtoAscii
+#
 #   in : AL
 #   out: AX
 #   Convert AL to ascii code and store into AX
@@ -675,8 +675,8 @@ add_ascii_end_2:
     ret
 
 ################################################################
-#   SetMemData           
-#                            
+#   SetMemData
+#
 #   Set memory data to buffer by edx index
 ################################################################
 SetMemData:
@@ -699,12 +699,12 @@ set_mem_length:
     jmp     set_mem_end
 set_mem_type:
     movl    %eax,           (Type)
-set_mem_end:  
+set_mem_end:
     ret
 
 ################################################################
-#   CalculateMemSize           
-#                            
+#   CalculateMemSize
+#
 #   Calulate memory size by base/length, stored into MemSize
 ################################################################
 CalculateMemSize:
@@ -718,7 +718,7 @@ CalculateMemSize:
 
     movl    %eax,           (MemSize)
 cal_mem_end:
-    ret  
+    ret
 
 
 SetupPageMechanism:
@@ -734,7 +734,7 @@ SetupPageMechanism:
 
     # calculate how many PDE and PTE to initial
     xor     %edx,           %edx
-    mov     (MemSize),      %eax      
+    mov     (MemSize),      %eax
     mov     $0x400000,      %ebx        # each table can restore 4MB
     div     %ebx                        # eax = page table count = PDE count, %edx = remainder
     mov     %eax,           %ecx
@@ -753,12 +753,12 @@ no_remainder:
 init_dir:
     stosl
     add     $4096,          %eax
-    loop    init_dir 
+    loop    init_dir
 
 
     # initial Page Table
     mov     (PageTblCnt), %eax
-    mov     $1024,          %ebx        # each 
+    mov     $1024,          %ebx        # each
     mul     %ebx
     mov     %eax,           %ecx
     movl    $PageTblBase,   %edi
@@ -822,8 +822,8 @@ InitKernel:
     xor     %esi,           %esi
     movw    (BaseOfKernelPhyAddr + 0x2c), %cx	#ELF header->e_program header num
     movzx   %cx,            %ecx
-    movl    (BaseOfKernelPhyAddr + 0x1c), %esi	#ELF header->e_program header offset 
-    add     $BaseOfKernelPhyAddr, %esi			#add kernel offset 
+    movl    (BaseOfKernelPhyAddr + 0x1c), %esi	#ELF header->e_program header offset
+    add     $BaseOfKernelPhyAddr, %esi			#add kernel offset
 
 init_kernel_begin:
     mov     (%esi),         %eax

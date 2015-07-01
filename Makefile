@@ -35,7 +35,7 @@ C_FLAGS = -std=c99 -fno-builtin -fno-stack-protector -fno-zero-initialized-in-bs
 
 C_KERNEL_SRC = kernel/interrupt.c kernel/core.c kernel/process.c \
 			   kernel/exception.c kernel/global.c kernel/console.c \
-			   kernel/system.c kernel/message.c
+			   kernel/system.c kernel/message.c kernel/hdd.c
 GAS_KERNEL_SRC = kernel/gas/entry.s kernel/gas/exception.s kernel/gas/interrupt.s kernel/gas/sys_call.s
 KERNEL_OBJS = $(subst kernel,build,$(GAS_KERNEL_SRC:.s=.o)) $(subst kernel,build,$(C_KERNEL_SRC:.c=.o))
 
