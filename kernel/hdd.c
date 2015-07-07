@@ -12,6 +12,8 @@
 
 static uint8_t hdd_status ;
 
+void get_identify(uint8_t drive) ;
+
 void hdd_task()
 {
     MESSAGE msg ;
@@ -25,7 +27,7 @@ void hdd_task()
         switch (msg.type)
         {
         case MSG_TYPE_DEV_OPEN:
-            hdd_identify() ;
+            get_hdd_identify(0) ;
             break ;
         default:
             CRITICAL("hdd_task") ;
@@ -54,7 +56,52 @@ void hdd_int_handler(int irq)
     deliver_int_to_proc(HDD_TASK) ;
 }
 
-void hdd_identify()
-{
 
+static void get_identify(uint8_t drive)
+{
+    HDD_CMD cmd ;
+    cmd.dev = MAKE_DEV_REG(0, drive, 0) ;
+    cmd.cmd = ATA_IDENTIFY ;
+
+    //
+    // send and receive command
+    //
+    // check busy status at first.
+    if (get_status(STATUS_BUSY, 0 , HDD_TIMEOUT))
+        CRITICAL("fuck, hard drive always busy") ;
+
+    // enable interrupt(nIEN)
+    outb(0, HDD_REG_DEV_CTRL) ;
+
+    // Out Command Block Register
+    outb(cmd.feature, HDD_REG_FEATURES) ;
+    outb(cmd.n_sector, HDD_REG_NSECTOR) ;
+    outb(cmd.lba_low, HDD_REG_LBA_LOW) ;
+    outb(cmd.lba_mid, HDD_REG_LBA_MID) ;
+    outb(cmd.lba_high, HDD_REG_LBA_HIGH) ;
+    outb(cmd.device, HDD_REG_DEV) ;
+    // out command
+    outb(cmd.command, HDD_REG_CMD) ;
+
+    // wait hdd interrupt...
+    MESSAGE msg ;
+    send_recv(MSG_RECEIVE, MSG_SOURCE_INTERRUPT, &msg) ;
 }
+
+#define HZ 100
+extern int get_ticks() ;
+static bool get_status(int st_mask, int val, int timeout)
+{
+    for (int t = get_ticks() ; ((get_ticks()-t) * 1000/HZ) < timeout ; )
+    {
+        if ((inb(HDD_REG_STATUS) & st_mask) == val)
+            return true ;
+    }
+    return false ;
+}
+
+
+
+
+
+

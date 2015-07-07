@@ -7,6 +7,10 @@
 #ifndef __HDD_H__
 #define __HDD_H__
 
+#include "type.h"
+
+typedef _HDD_CMD    HDD_CMD ;
+
 //      NAME                PORT                    INPUT/OUTPUT
 #define HDD_REG_DATA        0x1f0                   // I/O
 
@@ -34,6 +38,25 @@
 #define HDD_REG_DEV_CTRL    0x3f6                   // O
 
 #define HDD_REG_DRV_ADDR    0x3f7                   // I
+
+#define MAKE_DEV_REG(lba, drv, lba_high) (((lba) << 6) | ((drv) << 4) |	(lba_highest & 0xF) | 0xA0)
+
+#define	HDD_TIMEOUT         10000   // milli second
+#define	PARTITION_TABLE_OFFSET  0x1BE
+#define ATA_IDENTIFY        0xEC
+#define ATA_READ            0x20
+#define ATA_WRITE           0x30
+
+struct _HDD_CMD
+{
+    uint8_t feature ;
+    uint8_t n_sector ;
+    uint8_t lba_low ;
+    uint8_t lba_mid ;
+    uint8_t lba_high ;
+    uint8_t device ;
+    uint8_t command ;
+};
 
 
 void hdd_task() ;
