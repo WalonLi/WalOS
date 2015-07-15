@@ -19,6 +19,7 @@ static uint8_t hd_buf[SECTOR_SIZE * 2];
 
 static void get_hdd_identify(uint8_t drive) ;
 static bool get_status(int st_mask, int val, int timeout) ;
+static void print_hdd_identify(uint16_t *info) ;
 
 void hdd_task()
 {
@@ -95,6 +96,45 @@ static void get_hdd_identify(uint8_t drive)
 
     // get data from port
     read_port(HDD_REG_DATA, hd_buf, SECTOR_SIZE) ;
+
+    print_hdd_identify((uint16_t*)hd_buf) ;
+}
+
+typedef struct _ASCII_IDENTIFY
+{
+    int index ;
+    int length ;
+    char *description ;
+} ASCII_IDENTIFY;
+
+static void print_hdd_identify(uint16_t *info)
+{
+    ASCII_IDENTIFY identify[] = {{10, 20, "HD SN"},
+                                 {27, 40, "HD Model"}} ;
+
+    for (int i = 0 ; i < sizeof(identify)/sizeof(ASCII_IDENTIFY) ; ++i)
+    {
+        char s[64] = {0};
+        char *p = (char*)&info[identify[i].index] ;
+        for (int j = 0 ; j < identify[i].length/2 ; ++j)
+        {
+            s[i*2+1] = *p++ ;
+            s[i*2] = *p++ ;
+        }
+        s[i*2] = 0 ;
+        printf("%s %s\n", identify[i].description, s) ;
+    }
+
+    // bool support = false ;
+    int capab = info[49] ;
+    // support = (capab & 0x400) ? "Yes" : "No" ;
+    printf("LBA support: %s\n", (capab & 0x200) ? "Yes" : "No" ) ;
+
+    int cmd_set_sup = info[83] ;
+    printf("LBA48 support: %s\n", (cmd_set_sup & 0x400) ? "Yes" : "No") ;
+
+    int sector = (((int)info[64]<<16) + info[60]) ;
+    printf("HDD size: %dMB\n", sector*512 / 1000000) ;
 }
 
 #define HZ 100
