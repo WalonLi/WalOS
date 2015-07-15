@@ -10,9 +10,15 @@
 #include "lib/string.h"
 #include "lib/debug.h"
 
+// Hard Drive
+#define SECTOR_SIZE         512
+#define SECTOR_BITS         (SECTOR_SIZE * 8)
+#define SECTOR_SIZE_SHIFT   9
 static uint8_t hdd_status ;
+static uint8_t hd_buf[SECTOR_SIZE * 2];
 
-void get_identify(uint8_t drive) ;
+static void get_hdd_identify(uint8_t drive) ;
+static bool get_status(int st_mask, int val, int timeout) ;
 
 void hdd_task()
 {
@@ -21,7 +27,7 @@ void hdd_task()
     hdd_init() ;
     while (true)
     {
-        send_recv(MSG_RECEIVE, P_ANY, &msg) ;
+        send_recv(MSG_RECEIVE, P_ANY, &msg) ; // try to receive hdd interrupt
         int src = msg.source ;
 
         switch (msg.type)
@@ -57,11 +63,11 @@ void hdd_int_handler(int irq)
 }
 
 
-static void get_identify(uint8_t drive)
+static void get_hdd_identify(uint8_t drive)
 {
     HDD_CMD cmd ;
-    cmd.dev = MAKE_DEV_REG(0, drive, 0) ;
-    cmd.cmd = ATA_IDENTIFY ;
+    cmd.device = MAKE_DEV_REG(0, drive, 0) ;
+    cmd.command = ATA_IDENTIFY ;
 
     //
     // send and receive command
@@ -86,6 +92,9 @@ static void get_identify(uint8_t drive)
     // wait hdd interrupt...
     MESSAGE msg ;
     send_recv(MSG_RECEIVE, MSG_SOURCE_INTERRUPT, &msg) ;
+
+    // get data from port
+    read_port(HDD_REG_DATA, hd_buf, SECTOR_SIZE) ;
 }
 
 #define HZ 100

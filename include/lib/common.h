@@ -25,4 +25,6 @@ void delay(int milli) ;
 int printf(const char *fmt, ...) ;
 int vsprintf(char *buf, const char *fmt, va_list args) ;
 
+void read_port(uint16_t port, void *buf, int length) ;
+
 #endif

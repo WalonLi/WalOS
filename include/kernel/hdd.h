@@ -9,7 +9,7 @@
 
 #include "type.h"
 
-typedef _HDD_CMD    HDD_CMD ;
+typedef struct _HDD_CMD    HDD_CMD ;
 
 //      NAME                PORT                    INPUT/OUTPUT
 #define HDD_REG_DATA        0x1f0                   // I/O
@@ -39,7 +39,7 @@ typedef _HDD_CMD    HDD_CMD ;
 
 #define HDD_REG_DRV_ADDR    0x3f7                   // I
 
-#define MAKE_DEV_REG(lba, drv, lba_high) (((lba) << 6) | ((drv) << 4) |	(lba_highest & 0xF) | 0xA0)
+#define MAKE_DEV_REG(lba, drv, lba_high) (((lba) << 6) | ((drv) << 4) |	(lba_high & 0xF) | 0xA0)
 
 #define	HDD_TIMEOUT         10000   // milli second
 #define	PARTITION_TABLE_OFFSET  0x1BE
