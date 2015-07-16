@@ -37,6 +37,7 @@ void init_process_main()
             rpl = RPL_TASK ;
             eflags = 0x1202 ; // IF=1, IOPL=1, bit2 always set 1 ;
             priority = 15 ;
+            proc_table[i].console_id = 0 ;
         }
         else if (i < RING0_TASK_CNT + RING1_TASK_CNT + RING2_TASK_CNT)
         {
@@ -50,11 +51,12 @@ void init_process_main()
             rpl = RPL_USER;
             eflags = 0x202 ; // IF=1, bit2 always set 1 ;
             priority = 5 ;
+            proc_table[i].console_id = 1 ;
         }
 
 
         proc_table[i].id = i ;
-        proc_table[i].console_id = 0 ;
+        // proc_table[i].console_id = 0 ;
 
         strcpy(proc_table[i].name, task->name) ;
 
@@ -87,9 +89,6 @@ void init_process_main()
         selector_ldt += (1 << 3) ;
     }
 
-    proc_table[2].console_id = 0 ;
-    proc_table[3].console_id = 1 ;
-    proc_table[4].console_id = 1 ;
 
     process_ready = proc_table ;
     int_reenter = 0 ;

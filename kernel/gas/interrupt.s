@@ -132,6 +132,34 @@ _save_1:
     ret
 .endm
 
+.macro hw_int_slaver num
+    call    _save
+
+    in      $INT_S_CTRL_MASK, %al
+    or      $(1 << (\num - 8)),     %al
+    out     %al,    $INT_S_CTRL_MASK
+
+    // master and slave should be set EOI
+    mov     $END_OF_INTERRUPT, %al
+    out     %al,    $INT_M_CTRL
+    nop
+    out     %al,    $INT_S_CTRL
+
+    sti
+    pushl   $\num
+    mov     $\num,  %esi
+    call    *irq_table(, %esi, 4)   # irq_table[%esi]
+    popl     %ecx
+    cli
+
+    # resum clock interrupt
+    in      $INT_S_CTRL_MASK, %al
+    and     $~(1 << (\num - 8)),  %al
+    out     %al,    $INT_S_CTRL_MASK
+
+    ret
+.endm
+
 .align 2
 hw_int00:
     hw_int_master 0
@@ -158,28 +186,28 @@ hw_int07:
     hw_int_master 7
 
 hw_int08:
-    slaver_8259 8
+    hw_int_slaver 8
 
 hw_int09:
-    slaver_8259 9
+    hw_int_slaver 9
 
 hw_int10:
-    slaver_8259 10
+    hw_int_slaver 10
 
 hw_int11:
-    slaver_8259 11
+    hw_int_slaver 11
 
 hw_int12:
-    slaver_8259 12
+    hw_int_slaver 12
 
 hw_int13:
-    slaver_8259 13
+    hw_int_slaver 13
 
 hw_int14:
-    slaver_8259 14
+    hw_int_slaver 14
 
 hw_int15:
-    slaver_8259 15
+    hw_int_slaver 15
 
 
 disable_irq:

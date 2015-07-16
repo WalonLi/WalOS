@@ -24,13 +24,15 @@ char        task_stack[STACK_SIZE] ;
 extern void console_task() ;
 extern void sys_task() ;
 extern void hdd_task() ;
+extern void fs_task() ;
 extern void process_A() ;
 extern void process_B() ;
 extern void process_C() ;
 
 TASK        r1_task_table[RING1_TASK_CNT] = { {console_task, STACK_SIZE_CONSOLE, "console"},
                                               {sys_task, STACK_SIZE_SYS, "system"},
-                                              {hdd_task, STACK_SIZE_HDD, "hdd"}} ;
+                                              {hdd_task, STACK_SIZE_HDD, "hdd"},
+                                              {fs_task, STACK_SIZE_FS, "fs"}} ;
 TASK        r3_task_table[RING3_TASK_CNT] = {{process_A, STACK_SIZE_PROC_A, "P_A"},
                                             {process_B, STACK_SIZE_PROC_B, "P_B"},
                                             {process_C, STACK_SIZE_PROC_C, "P_C"} } ;

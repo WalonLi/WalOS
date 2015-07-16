@@ -139,7 +139,7 @@ typedef struct _TASK
 
 #define RING0_TASK_CNT      0
 
-#define KRNL_TASK_CNT       3
+#define KRNL_TASK_CNT       4
 #define RING1_TASK_CNT      KRNL_TASK_CNT + 0
 
 #define RING2_TASK_CNT      0
@@ -152,11 +152,12 @@ typedef struct _TASK
 #define STACK_SIZE_CONSOLE  0x8000
 #define STACK_SIZE_SYS      0x8000
 #define STACK_SIZE_HDD      0x8000
+#define STACK_SIZE_FS       0x8000
 #define STACK_SIZE_PROC_A   0x8000
 #define STACK_SIZE_PROC_B   0x8000
 #define STACK_SIZE_PROC_C   0x8000
 #define STACK_SIZE          STACK_SIZE_PROC_A + STACK_SIZE_PROC_B + STACK_SIZE_PROC_C \
-                            + STACK_SIZE_CONSOLE + STACK_SIZE_SYS + STACK_SIZE_HDD
+                            + STACK_SIZE_CONSOLE + STACK_SIZE_SYS + STACK_SIZE_HDD + STACK_SIZE_FS
 //#define STACK_SIZE          STACK_SIZE_PROC_A
 
 
@@ -167,6 +168,7 @@ typedef struct _TASK
 #define CONSOLE_TASK        0x0
 #define SYSTEM_TASK         0x1
 #define HDD_TASK            0x2
+#define FS_TASK             0x3
 
 void init_process_main() ;
 void process_schedule() ;

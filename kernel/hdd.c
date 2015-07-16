@@ -17,13 +17,14 @@
 static uint8_t hdd_status ;
 static uint8_t hd_buf[SECTOR_SIZE * 2];
 
-static void get_hdd_identify(uint8_t drive) ;
+static void get_hdd_identify(int drive) ;
 static bool get_status(int st_mask, int val, int timeout) ;
 static void print_hdd_identify(uint16_t *info) ;
 
 void hdd_task()
 {
     MESSAGE msg ;
+    printf("hdd task begin\n") ;
 
     hdd_init() ;
     while (true)
@@ -60,11 +61,11 @@ void hdd_init()
 void hdd_int_handler(int irq)
 {
     hdd_status = inb(HDD_REG_STATUS) ;
+    CRITICAL("hdd_int_handler") ;
     deliver_int_to_proc(HDD_TASK) ;
 }
 
-
-static void get_hdd_identify(uint8_t drive)
+static void get_hdd_identify(int drive)
 {
     HDD_CMD cmd ;
     cmd.device = MAKE_DEV_REG(0, drive, 0) ;
@@ -74,7 +75,7 @@ static void get_hdd_identify(uint8_t drive)
     // send and receive command
     //
     // check busy status at first.
-    if (get_status(STATUS_BUSY, 0 , HDD_TIMEOUT))
+    if (!get_status(STATUS_BUSY, 0 , HDD_TIMEOUT))
         CRITICAL("fuck, hard drive always busy") ;
 
     // enable interrupt(nIEN)
@@ -90,9 +91,11 @@ static void get_hdd_identify(uint8_t drive)
     // out command
     outb(cmd.command, HDD_REG_CMD) ;
 
+    printf("fffffffffffff\n") ;
     // wait hdd interrupt...
     MESSAGE msg ;
     send_recv(MSG_RECEIVE, MSG_SOURCE_INTERRUPT, &msg) ;
+    printf("eeeeeeeeeeee\n") ;
 
     // get data from port
     read_port(HDD_REG_DATA, hd_buf, SECTOR_SIZE) ;
