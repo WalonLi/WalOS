@@ -77,7 +77,8 @@ enum msg_type {
 
 	// System task
 	MSG_TYPE_GET_TICKS,
-	MSG_TYPE_DEV_OPEN,
+
+	MSG_TYPE_DEV_OPEN = 1001,
 };
 
 

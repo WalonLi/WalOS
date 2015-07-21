@@ -559,6 +559,7 @@ int sys_printx(int un1, int un2, char *msg, PROCESS *proc)
 */
 int sys_send_recv(int func, int src_dest, MESSAGE *msg, PROCESS *proc)
 {
+
     ASSERT(int_reenter == 0) ; // RING0 only
     // ASSERT((src_dest >= 0 && src_dest < TOTAL_TASK_CNT)) ;
     // ASSERT((src_dest >= 0 && src_dest < TOTAL_TASK_CNT) || src_dest == ANY || src_dest == INTERRUPT) ;

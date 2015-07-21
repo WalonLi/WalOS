@@ -61,7 +61,6 @@ void hdd_init()
 void hdd_int_handler(int irq)
 {
     hdd_status = inb(HDD_REG_STATUS) ;
-    CRITICAL("hdd_int_handler") ;
     deliver_int_to_proc(HDD_TASK) ;
 }
 
@@ -91,11 +90,9 @@ static void get_hdd_identify(int drive)
     // out command
     outb(cmd.command, HDD_REG_CMD) ;
 
-    printf("fffffffffffff\n") ;
     // wait hdd interrupt...
     MESSAGE msg ;
     send_recv(MSG_RECEIVE, MSG_SOURCE_INTERRUPT, &msg) ;
-    printf("eeeeeeeeeeee\n") ;
 
     // get data from port
     read_port(HDD_REG_DATA, hd_buf, SECTOR_SIZE) ;
@@ -112,19 +109,20 @@ typedef struct _ASCII_IDENTIFY
 
 static void print_hdd_identify(uint16_t *info)
 {
-    ASCII_IDENTIFY identify[] = {{10, 20, "HD SN"},
-                                 {27, 40, "HD Model"}} ;
+    char s[64] = {0};
+    ASCII_IDENTIFY identify[] = {{10, 20, "HD SN:"},
+                                 {27, 40, "HD Model:"}} ;
 
     for (int i = 0 ; i < sizeof(identify)/sizeof(ASCII_IDENTIFY) ; ++i)
     {
-        char s[64] = {0};
+        int j = 0 ;
         char *p = (char*)&info[identify[i].index] ;
-        for (int j = 0 ; j < identify[i].length/2 ; ++j)
+        for (; j < identify[i].length/2 ; ++j)
         {
-            s[i*2+1] = *p++ ;
-            s[i*2] = *p++ ;
+            s[j*2+1] = *p++ ;
+            s[j*2] = *p++ ;
         }
-        s[i*2] = 0 ;
+        s[j*2] = 0 ;
         printf("%s %s\n", identify[i].description, s) ;
     }
 
@@ -136,7 +134,7 @@ static void print_hdd_identify(uint16_t *info)
     int cmd_set_sup = info[83] ;
     printf("LBA48 support: %s\n", (cmd_set_sup & 0x400) ? "Yes" : "No") ;
 
-    int sector = (((int)info[64]<<16) + info[60]) ;
+    int sector = (((int)info[61]<<16) + info[60]) ;
     printf("HDD size: %dMB\n", sector*512 / 1000000) ;
 }
 

@@ -118,7 +118,6 @@ _save_1:
 
     sti
     pushl   $\num
-
     mov     $\num,  %esi
     call    *irq_table(, %esi, 4)   # irq_table[%esi]
     popl     %ecx
@@ -134,7 +133,6 @@ _save_1:
 
 .macro hw_int_slaver num
     call    _save
-
     in      $INT_S_CTRL_MASK, %al
     or      $(1 << (\num - 8)),     %al
     out     %al,    $INT_S_CTRL_MASK
@@ -243,7 +241,7 @@ _disable_done:
 
 
 enable_irq:
-    mov     4(%esp),    %eax
+    mov     4(%esp),    %ecx
     pushf
     cli
     mov     $~1,        %ah
@@ -282,9 +280,6 @@ sys_call:
 
     cli
     ret
-
-
-
 
 
 

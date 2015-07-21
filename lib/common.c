@@ -198,7 +198,6 @@ void delay(int milli)
     */
 }
 
-
 void read_port(uint16_t port, void *buf, int length)
 {
     __asm__ volatile("movl %%eax, %%edx": : "a"(port));
