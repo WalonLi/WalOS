@@ -24,6 +24,8 @@ $ ./start.sh
 
 [Executable and Linkable Format (ELF) document](http://flint.cs.yale.edu/cs422/doc/ELF_Format.pdf)
 
+[AT Attachment with Packet Interface](http://www.t13.org/documents/uploadeddocuments/docs2007/d1532v1r4b-at_attachment_with_packet_interface_-_7_volume_1.pdf)
+
 ----
 #####System call(6/30)
 ```
@@ -100,6 +102,40 @@ Kernel      |       Jump to kernel
         |                       |
         |                       |
 0x0     -------------------------
+```
+
+----
+#####Flat File System Layout(Orange's)(7/26)
+```
+-----------------------------
+|                           |
+|                           |
+|                           |
+|                           |
+|                           |
+|           DATA            |
+|                           |
+|                           |
+|                           |
+|                           |
+|---------------------------|
+|           root            |
+|---------------------------|
+|                           |
+|       i-node array        |
+|                           |
+|---------------------------|
+|                           |
+|       sector map          |
+|                           |
+|---------------------------|
+|       i-node map          |
+|---------------------------|
+|       super block         |
+|---------------------------|
+|       boot sector         |
+-----------------------------
+
 ```
 
 ```

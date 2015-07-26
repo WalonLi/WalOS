@@ -3,6 +3,8 @@
 ##  2015/05/12
 ##
 
+#fdisk -c=dos
+
 CC = gcc
 LD = ld
 OBJCPY = objcopy

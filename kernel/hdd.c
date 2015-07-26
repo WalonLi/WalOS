@@ -110,8 +110,9 @@ typedef struct _ASCII_IDENTIFY
 static void print_hdd_identify(uint16_t *info)
 {
     char s[64] = {0};
-    ASCII_IDENTIFY identify[] = {{10, 20, "HD SN:"},
-                                 {27, 40, "HD Model:"}} ;
+    ASCII_IDENTIFY identify[] = {{10, 20, "HD SN:"}, // 10~19
+                                 {27, 40, "HD Model:"}, //27~46
+                                 {23, 8,  "FW Ver:"}} ;
 
     for (int i = 0 ; i < sizeof(identify)/sizeof(ASCII_IDENTIFY) ; ++i)
     {
@@ -123,7 +124,7 @@ static void print_hdd_identify(uint16_t *info)
             s[j*2] = *p++ ;
         }
         s[j*2] = 0 ;
-        printf("%s %s\n", identify[i].description, s) ;
+        printf("%s %s\n", identify[i].description, (strlen(s) ? s : "none") ) ;
     }
 
     // bool support = false ;
