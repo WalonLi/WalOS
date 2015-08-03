@@ -10,6 +10,7 @@
 #include "kernel/process.h"
 #include "kernel/interrupt.h"
 #include "kernel/keyboard.h"
+#include "kernel/fs.h"
 
 // global parameter
 extern uint8_t      gdt_ptr[]; // 0-15:Limit  16-47:Base
@@ -36,6 +37,8 @@ extern irq_handler  irq_table[];
 extern void         *sys_call_table[] ;
 
 extern int          ticks ;
+
+extern DRIVE_MAP    drive_map[] ;
 
 extern uint32_t     key_map[] ;
 

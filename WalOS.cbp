@@ -47,6 +47,7 @@
 		<Unit filename="include/kernel/console.h" />
 		<Unit filename="include/kernel/core.h" />
 		<Unit filename="include/kernel/exception.h" />
+		<Unit filename="include/kernel/fs.h" />
 		<Unit filename="include/kernel/global.h" />
 		<Unit filename="include/kernel/hdd.h" />
 		<Unit filename="include/kernel/interrupt.h" />

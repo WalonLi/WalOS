@@ -45,6 +45,13 @@ void        *sys_call_table[SYS_CALL_TBL_CNT] = { sys_printx, sys_send_recv } ;
 int         ticks = 1 ;
 
 
+DRIVE_MAP drive_map[] = {{MSG_SOURCE_INVALID_DRIVER}, // Unused
+                          {MSG_SOURCE_INVALID_DRIVER}, // Floppy
+                          {MSG_SOURCE_INVALID_DRIVER}, // CD-ROM
+                          {HDD_TASK},                  // HDD
+                          {CONSOLE_TASK},              // console
+                          {MSG_SOURCE_INVALID_DRIVER}} ; // SCSI disk
+
 /* Keymap for US MF-2 keyboard. */
 
 uint32_t key_map[NR_SCAN_CODES * MAP_COLS] = {
