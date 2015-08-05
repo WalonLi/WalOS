@@ -14,12 +14,16 @@
 #define SECTOR_SIZE         512
 #define SECTOR_BITS         (SECTOR_SIZE * 8)
 #define SECTOR_SIZE_SHIFT   9
+#define DEV_TO_DRV(dev)     (dev <= MAX_PRIM ? dev / NR_PRIM_PER_DRIVE : (dev - MINOR_hd1a) / NR_SUB_PER_DRIVE)
+
 static uint8_t hdd_status ;
 static uint8_t hd_buf[SECTOR_SIZE * 2];
+static HDD_INFO hdd_info[1] ;
 
 static void get_hdd_identify(int drive) ;
 static bool get_status(int st_mask, int val, int timeout) ;
 static void print_hdd_identify(uint16_t *info) ;
+static void hdd_open(int dev) ;
 
 void hdd_task()
 {
@@ -35,7 +39,7 @@ void hdd_task()
         switch (msg.type)
         {
         case MSG_TYPE_DEV_OPEN:
-            get_hdd_identify(0) ;
+            hdd_open(msg.u.m3.m3i4) ; // device
             break ;
         default:
             CRITICAL("hdd_task") ;
@@ -55,6 +59,8 @@ void hdd_init()
     set_irq_handler(IRQ_AT, hdd_int_handler) ;
     enable_irq(IRQ_M_TO_S) ;
     enable_irq(IRQ_AT) ;
+
+    memset(&hdd_info, 0, sizeof(HDD_INFO)) ;
 }
 
 // hdd interrupt
@@ -137,6 +143,14 @@ static void print_hdd_identify(uint16_t *info)
 
     int sector = (((int)info[61]<<16) + info[60]) ;
     printf("HDD size: %dMB\n", sector*512 / 1000000) ;
+}
+
+static void hdd_open(int dev)
+{
+    int drive = DEV_TO_DRV(dev) ;
+    get_hdd_identify(drive) ;
+
+    // ********************HOLD********************
 }
 
 #define HZ 100
