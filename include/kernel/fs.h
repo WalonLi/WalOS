@@ -63,4 +63,7 @@ typedef struct _DRIVE_MAP
 #define MINOR_hd1a              0x10
 #define MINOR_hd2a              (MINOR_hd1a+NR_SUB_PER_PART)
 
+#define	P_PRIMARY	0
+#define	P_EXTENDED	1
+
 #endif

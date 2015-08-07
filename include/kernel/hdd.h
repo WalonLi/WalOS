@@ -13,6 +13,7 @@
 typedef struct _HDD_CMD         HDD_CMD ;
 typedef struct _PARTITION_INFO  PARTITION_INFO ;
 typedef struct _HDD_INFO        HDD_INFO ;
+typedef struct _PARTITION_ENTRY PARTITION_ENTRY ;
 
 //      NAME                PORT                    INPUT/OUTPUT
 #define HDD_REG_DATA        0x1f0                   // I/O
@@ -73,6 +74,21 @@ struct _HDD_INFO
     int open_cnt ;
     PARTITION_INFO primary[NR_PRIM_PER_DRIVE] ;
     PARTITION_INFO logical[NR_SUB_PER_DRIVE] ;
+};
+
+struct _PARTITION_ENTRY
+{
+    uint8_t indicator ;
+    uint8_t start_head ;
+    uint8_t start_sector ;
+    uint8_t start_cylinder ;
+    uint8_t system_id ;
+    uint8_t end_head ;
+    uint8_t end_sector ;
+    uint8_t end_cylinder ;
+
+    uint32_t starting_sector_cnt ;  // starting sector count
+    uint32_t sector_cnt ;           // total sector count in partition
 };
 
 void hdd_task() ;

@@ -104,6 +104,27 @@ static void get_hdd_identify(int drive)
     read_port(HDD_REG_DATA, hd_buf, SECTOR_SIZE) ;
 
     print_hdd_identify((uint16_t*)hd_buf) ;
+
+    uint16_t *info = (uint16_t*)hd_buf ;
+    hdd_info[drive].primary[0].base = 0 ;
+    hdd_info[drive].primary[0].sec_cnt = ((int)info[61] << 16) + info[60] ;
+}
+
+static void get_hdd_partition(int dev, int style)
+{
+    int drive = DEV_TO_DRV(dev) ;
+    PARTITION_ENTRY part_table[NR_SUB_PER_DRIVE] ;
+
+    if (style == P_PRIMARY)
+    {
+        // PRIMARY
+        // get_partition_table() ;
+
+    }
+    else
+    {
+        // EXTENDED
+    }
 }
 
 typedef struct _ASCII_IDENTIFY
@@ -145,12 +166,22 @@ static void print_hdd_identify(uint16_t *info)
     printf("HDD size: %dMB\n", sector*512 / 1000000) ;
 }
 
+static void print_hdd_info(HDD_INFO *info)
+{
+
+}
+
 static void hdd_open(int dev)
 {
     int drive = DEV_TO_DRV(dev) ;
     get_hdd_identify(drive) ;
 
-    // ********************HOLD********************
+    if (hdd_info[drive].open_cnt++ == 0)
+    {
+        // first time to open, print hdd information
+        get_hdd_partition(drive * (NR_PART_PER_DRIVE+1), P_PRIMARY) ;
+        print_hdd_info(&hdd_info[drive]) ;
+    }
 }
 
 #define HZ 100
