@@ -24,6 +24,7 @@ static void get_hdd_identify(int drive) ;
 static bool get_status(int st_mask, int val, int timeout) ;
 static void print_hdd_identify(uint16_t *info) ;
 static void hdd_open(int dev) ;
+static void hdd_cmd_out(HDD_CMD *cmd) ;
 
 void hdd_task()
 {
@@ -70,6 +71,29 @@ void hdd_int_handler(int irq)
     deliver_int_to_proc(HDD_TASK) ;
 }
 
+static void get_partition_table(int drive, int sector, PARTITION_ENTRY *tbl)
+{
+    HDD_CMD cmd ;
+    cmd.feature = 0 ;
+    cmd.n_sector = 1 ;
+    cmd.lba_low = sector & 0xff ;
+    cmd.lba_mid = (sector >> 8) & 0xff ;
+    cmd.lba_high = (sector >> 16) & 0xff ;
+    cmd.device = MAKE_DEV_REG(1, drive, (sector >> 24) & 0xf) ;
+    cmd.command = ATA_READ ;
+
+    hdd_cmd_out(&cmd) ;
+
+    // wait hdd interrupt...
+    MESSAGE msg ;
+    send_recv(MSG_RECEIVE, MSG_SOURCE_INTERRUPT, &msg) ;
+
+    // get data from port
+    read_port(HDD_REG_DATA, hd_buf, SECTOR_SIZE) ;
+
+    memcpy(tbl, hd_buf+PARTITION_TABLE_OFFSET, sizeof(PARTITION_ENTRY) * NR_PART_PER_DRIVE) ;
+}
+
 static void get_hdd_identify(int drive)
 {
     HDD_CMD cmd ;
@@ -79,22 +103,7 @@ static void get_hdd_identify(int drive)
     //
     // send and receive command
     //
-    // check busy status at first.
-    if (!get_status(STATUS_BUSY, 0 , HDD_TIMEOUT))
-        CRITICAL("fuck, hard drive always busy") ;
-
-    // enable interrupt(nIEN)
-    outb(0, HDD_REG_DEV_CTRL) ;
-
-    // Out Command Block Register
-    outb(cmd.feature, HDD_REG_FEATURES) ;
-    outb(cmd.n_sector, HDD_REG_NSECTOR) ;
-    outb(cmd.lba_low, HDD_REG_LBA_LOW) ;
-    outb(cmd.lba_mid, HDD_REG_LBA_MID) ;
-    outb(cmd.lba_high, HDD_REG_LBA_HIGH) ;
-    outb(cmd.device, HDD_REG_DEV) ;
-    // out command
-    outb(cmd.command, HDD_REG_CMD) ;
+    hdd_cmd_out(&cmd) ;
 
     // wait hdd interrupt...
     MESSAGE msg ;
@@ -113,13 +122,27 @@ static void get_hdd_identify(int drive)
 static void get_hdd_partition(int dev, int style)
 {
     int drive = DEV_TO_DRV(dev) ;
-    PARTITION_ENTRY part_table[NR_SUB_PER_DRIVE] ;
+    PARTITION_ENTRY table[NR_SUB_PER_DRIVE] ;
 
     if (style == P_PRIMARY)
     {
         // PRIMARY
-        // get_partition_table() ;
+        get_partition_table(drive, drive , table) ;
 
+
+        for (int i = 0 ; i < NR_PART_PER_DRIVE ; i++) // 0~3
+        {
+            if (table[i].system_id == 0x0) // no partition
+                continue ;
+
+            int dev_nr = i + 1 ;
+            hdd_info[drive].primary[dev_nr].base = table[i].start_sector ;
+            hdd_info[drive].primary[dev_nr].sec_cnt = table[i].sector_cnt ;
+            if (table[i].system_id == EXT_PART)
+            {
+                get_hdd_partition(dev + dev_nr, P_EXTENDED) ;
+            }
+        }
     }
     else
     {
@@ -182,6 +205,27 @@ static void hdd_open(int dev)
         get_hdd_partition(drive * (NR_PART_PER_DRIVE+1), P_PRIMARY) ;
         print_hdd_info(&hdd_info[drive]) ;
     }
+}
+
+
+static void hdd_cmd_out(HDD_CMD *cmd)
+{
+    // check busy status at first.
+    if (!get_status(STATUS_BUSY, 0 , HDD_TIMEOUT))
+        CRITICAL("fuck, hard drive always busy") ;
+
+    // enable interrupt(nIEN)
+    outb(0, HDD_REG_DEV_CTRL) ;
+
+    // Out Command Block Register
+    outb(cmd->feature, HDD_REG_FEATURES) ;
+    outb(cmd->n_sector, HDD_REG_NSECTOR) ;
+    outb(cmd->lba_low, HDD_REG_LBA_LOW) ;
+    outb(cmd->lba_mid, HDD_REG_LBA_MID) ;
+    outb(cmd->lba_high, HDD_REG_LBA_HIGH) ;
+    outb(cmd->device, HDD_REG_DEV) ;
+    // out command
+    outb(cmd->command, HDD_REG_CMD) ;
 }
 
 #define HZ 100

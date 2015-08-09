@@ -66,4 +66,8 @@ typedef struct _DRIVE_MAP
 #define	P_PRIMARY	0
 #define	P_EXTENDED	1
 
+#define ORANGES_PART	0x99	// orange partition
+#define NO_PART		0x00	    // no partition
+#define EXT_PART	0x05	    // extend partition
+
 #endif
