@@ -32,9 +32,9 @@ $ ./start.sh
 printf      (for print message on console)
 send_recv   (for IPC)
     |
-    ---- MSG_TYPE_HW_INTERRUPT
+    ---- MSG_HW_INTERRUPT
     |
-    ---- MSG_TYPE_GET_TICKS
+    ---- MSG_GET_TICKS
 ```
 
 #####Current Flow(6/26)

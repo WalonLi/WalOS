@@ -18,7 +18,7 @@ void sys_task()
 
         switch (msg.type)
         {
-        case MSG_TYPE_GET_TICKS:
+        case MSG_GET_TICKS:
             // u.m3.m3i1 = Return value;
             msg.u.m3.m3i1 = ticks ;
             send_recv(MSG_SEND, src, &msg) ;

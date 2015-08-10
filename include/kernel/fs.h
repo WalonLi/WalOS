@@ -38,7 +38,7 @@ typedef struct _DRIVE_MAP
 
 */
 
-#define MAX_DRIVES              2
+#define MAX_DRIVES              2       // only IDE primary hard disk
 #define NR_PART_PER_DRIVE       4       // 1~4
 #define NR_SUB_PER_PART         16      // a~p
 

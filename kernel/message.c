@@ -86,7 +86,7 @@ int msg_recv(PROCESS *p_recv, int src, MESSAGE *msg)
         MESSAGE int_msg ;
         memset(&int_msg, '\0', sizeof(MESSAGE)) ;
         int_msg.source = MSG_SOURCE_INTERRUPT ;
-        int_msg.type = MSG_TYPE_HW_INTERRUPT ;
+        int_msg.type = MSG_HW_INTERRUPT ;
 
         memcpy(vir_to_linear(p_recv->id, msg), &int_msg, sizeof(MESSAGE)) ;
         p_recv->have_int_msg = false;

@@ -155,7 +155,7 @@ void deliver_int_to_proc(int n_task)
         && (proc->recv_from == MSG_SOURCE_INTERRUPT || proc->recv_from == P_ANY))
     {
         proc->msg->source = MSG_SOURCE_INTERRUPT ;
-        proc->msg->type = MSG_TYPE_HW_INTERRUPT ;
+        proc->msg->type = MSG_HW_INTERRUPT ;
         proc->msg = null ;
         proc->have_int_msg = false ;
         proc->flags &= ~MSG_RECVING ;

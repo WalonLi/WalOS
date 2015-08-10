@@ -15,6 +15,12 @@ typedef struct _PARTITION_INFO  PARTITION_INFO ;
 typedef struct _HDD_INFO        HDD_INFO ;
 typedef struct _PARTITION_ENTRY PARTITION_ENTRY ;
 
+
+// How to operate hard disk
+// 1. Fill Command Block Register
+// 2. Fill Control Block Register
+
+// Command Block Registers
 //      NAME                PORT                    INPUT/OUTPUT
 #define HDD_REG_DATA        0x1f0                   // I/O
 
@@ -38,12 +44,24 @@ typedef struct _PARTITION_ENTRY PARTITION_ENTRY ;
     #define STATUS_ERR          0x01
 #define HDD_REG_CMD         0x1f7                   // O
 
+
+// Control Block Registers
 #define HDD_REG_ALT_STATUS  0x3f6                   // I
 #define HDD_REG_DEV_CTRL    0x3f6                   // O
 
 #define HDD_REG_DRV_ADDR    0x3f7                   // I
 
-#define MAKE_DEV_REG(lba, drv, lba_high) (((lba) << 6) | ((drv) << 4) |	(lba_high & 0xF) | 0xA0)
+//      LBA mode
+// 7    1
+// 6    L               (L == 0 ? CHS : LBA)
+// 5    1
+// 4    Choose Drive    (DRV == 0 ? master : slaver)
+// 3    HS3             (if L == 0, 4bits select the head number)
+// 2    HS2             (if L == 1, HS0~GS3 contain bit 24~27 of the LBA)
+// 1    HS1
+// 0    HS0
+#define MAKE_CMD_DEVICE(lba, drv, lba_highest) (((lba) << 6) | ((drv) << 4) | (lba_highest & 0xF) | 0xA0)
+
 
 #define	HDD_TIMEOUT         10000   // milli second
 #define	PARTITION_TABLE_OFFSET  0x1BE

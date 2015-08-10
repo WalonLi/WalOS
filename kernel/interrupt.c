@@ -495,7 +495,7 @@ int get_ticks()
     MESSAGE msg ;
     memset(&msg, 0, sizeof(MESSAGE)) ;
 
-    msg.type = MSG_TYPE_GET_TICKS ;
+    msg.type = MSG_GET_TICKS ;
     send_recv(MSG_BOTH, SYSTEM_TASK, &msg) ; //system task
 
     // u.m3.m3i1 = Return value;

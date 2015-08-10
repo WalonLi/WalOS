@@ -16,7 +16,7 @@ void fs_task()
     printf("fs task begin\n") ;
 
     MESSAGE msg ;
-    msg.type = MSG_TYPE_DEV_OPEN ;
+    msg.type = MSG_DEV_OPEN ;
     send_recv(MSG_BOTH, HDD_TASK, &msg) ;
 
     while (1) ;

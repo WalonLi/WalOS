@@ -73,12 +73,17 @@ int send_recv(int func, int src_dest, MESSAGE *msg) ;
 enum msg_type {
 	// when hard interrupt occurs, a msg (with type==HARD_INT) will
     // be sent to some tasks
-	MSG_TYPE_HW_INTERRUPT = 1,
+	MSG_HW_INTERRUPT = 1,
 
 	// System task
-	MSG_TYPE_GET_TICKS,
+	MSG_GET_TICKS,
 
-	MSG_TYPE_DEV_OPEN = 1001,
+    // drive's msg type
+	MSG_DEV_OPEN = 1001,
+	MSG_DEV_CLOSE,
+	MSG_DEV_READ,
+	MSG_DEV_WRITE,
+	MSG_DEV_IO_CONTROL
 };
 
 
