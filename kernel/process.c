@@ -171,6 +171,7 @@ void deliver_int_to_proc(int n_task)
 extern int get_ticks() ;
 void process_A()
 {
+    while (true) ;
     while (true)
     {
         printf("A: ticks:%d ", get_ticks()) ;

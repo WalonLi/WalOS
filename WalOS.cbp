@@ -7,7 +7,7 @@
 		<Option execution_dir="/home/walon/Project/WalOS" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
-		<Option virtualFolders="include/kernel/;" />
+		<Option virtualFolders="include/kernel/;lib/;" />
 		<Build>
 			<Target title="build">
 				<Option output="build/WalOS" prefix_auto="1" extension_auto="1" />
@@ -48,7 +48,9 @@
 		<Unit filename="include/kernel/core.h" />
 		<Unit filename="include/kernel/exception.h" />
 		<Unit filename="include/kernel/fs.h" />
-		<Unit filename="include/kernel/global.h" />
+		<Unit filename="include/kernel/global.h">
+			<Option virtualFolder="lib/" />
+		</Unit>
 		<Unit filename="include/kernel/hdd.h" />
 		<Unit filename="include/kernel/interrupt.h" />
 		<Unit filename="include/kernel/io.h" />

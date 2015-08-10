@@ -175,6 +175,10 @@ char *itoa_base(int value, char *dest, int radix)
     }
 
     if (!positive) dest[i++] = '-' ;
+
+    // handle 0
+    if (i == 0) dest[i++] = '0' ;
+
     dest[i] = '\0' ;
 
     reverse(dest) ;

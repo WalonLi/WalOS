@@ -21,8 +21,10 @@ static uint8_t hd_buf[SECTOR_SIZE * 2];
 static HDD_INFO hdd_info[1] ;
 
 static void handle_identify(int drive) ;
+static void handle_partition(int dev, int style) ;
 static bool get_status(int st_mask, int val, int timeout) ;
 static void print_hdd_identify(uint16_t *info) ;
+static void print_hdd_info(HDD_INFO *info) ;
 static void hdd_init() ;
 static void hdd_open(int dev) ;
 static void hdd_cmd_out(HDD_CMD *cmd) ;
@@ -176,7 +178,8 @@ static void handle_partition(int dev, int style)
 
             // fill primary base and sector count
             int dev_nr = i + 1 ;
-            hdd_info[drive].primary[dev_nr].base = table[i].start_sector ;
+            hdd_info[drive].primary[dev_nr].base = table[i].starting_sector ;
+            // printf("%x %x\n", table[i].start_sector, table[i].starting_sector) ;
             hdd_info[drive].primary[dev_nr].sec_cnt = table[i].sector_cnt ;
             if (table[i].system_id == EXT_PART)
             {
@@ -199,9 +202,9 @@ static void handle_partition(int dev, int style)
             int dev_nr = sub_signature + i ;
             get_partition_table(drive, next_sub_sector, table) ;
 
-            hdd_info[drive].logical[dev_nr].base = next_sub_sector + table[0].start_sector ;
+            hdd_info[drive].logical[dev_nr].base = next_sub_sector + table[0].starting_sector ;
             hdd_info[drive].logical[dev_nr].sec_cnt = table[0].sector_cnt ;
-            next_sub_sector = extend_base_sector + table[1].start_sector ;
+            next_sub_sector = extend_base_sector + table[1].starting_sector ;
 
             if (table[1].system_id == NO_PART)
                 break ;
@@ -252,6 +255,19 @@ static void print_hdd_identify(uint16_t *info)
 static void print_hdd_info(HDD_INFO *info)
 {
 
+    for (int i = 0 ; i < NR_PART_PER_DRIVE + 1 ; i++)
+    {
+        printf("%s", (i == 0 ? " DRIVE_" : "     MAIN_")) ;
+        printf("PART_%d-> base:0x%x sector_cnt:0x%x\n", i, info->primary[i].base, info->primary[i].sec_cnt) ;
+    }
+
+    for (int i = 0 ; i < NR_SUB_PER_DRIVE ; i++)
+    {
+        if (!info->logical[i].sec_cnt) continue ;
+
+        printf("         ") ;
+        printf("LOGIC_PART_%d-> base:0x%x, sector_cnt:0x%x\n", i, info->logical[i].base, info->logical[i].sec_cnt) ;
+    }
 }
 
 static void hdd_cmd_out(HDD_CMD *cmd)

@@ -105,14 +105,16 @@ struct _PARTITION_ENTRY
     uint8_t end_sector ;
     uint8_t end_cylinder ;
 
-    uint32_t starting_sector_cnt ;  // starting sector count
+    uint32_t starting_sector ;  // starting sector count from 0/LBA
     uint32_t sector_cnt ;           // total sector count in partition
 };
 
 void hdd_task() ;
+void hdd_int_handler(int irq) ;
+/*
 void hdd_init() ;
 void hdd_identify() ;
-void hdd_int_handler(int irq) ;
+*/
 
 
 

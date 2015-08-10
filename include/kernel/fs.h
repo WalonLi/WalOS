@@ -63,6 +63,10 @@ typedef struct _DRIVE_MAP
 #define MINOR_hd1a              0x10
 #define MINOR_hd2a              (MINOR_hd1a+NR_SUB_PER_PART)
 
+#define	MINOR_BOOT              MINOR_hd2a
+
+#define ROOT_DEV                MAKE_DEV_SIGNATURE(HDD_DEVICE, MINOR_BOOT)
+
 #define	P_PRIMARY	0
 #define	P_EXTENDED	1
 
