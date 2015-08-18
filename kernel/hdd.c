@@ -29,6 +29,9 @@ static void hdd_init() ;
 static void hdd_open(int dev) ;
 static void hdd_cmd_out(HDD_CMD *cmd) ;
 static void hdd_open(int dev) ;
+static void hdd_close(int dev) ;
+static void hdd_read_write(MESSAGE *msg) ;
+static void hdd_io_control(MESSAGE *msg) ;
 
 /**
     hdd task main function
@@ -49,6 +52,16 @@ void hdd_task()
         {
         case MSG_DEV_OPEN:
             hdd_open(msg.u.m3.m3i4) ; // device
+            break ;
+        case MSG_DEV_CLOSE:
+            hdd_close(msg.u.m3.m3i4) ;
+            break ;
+        case MSG_DEV_READ:
+        case MSG_DEV_WRITE:
+            hdd_read_write(&msg) ;
+            break ;
+        case MSG_DEV_IO_CONTROL:
+            hdd_io_control(&msg) ;
             break ;
         default:
             CRITICAL("hdd_task") ;
@@ -71,6 +84,41 @@ static void hdd_open(int dev)
         handle_partition(drive * (NR_PART_PER_DRIVE+1), P_PRIMARY) ;
         print_hdd_info(&hdd_info[drive]) ;
     }
+}
+
+static void hdd_close(int dev)
+{
+    int drive = DEV_TO_DRV(dev) ;
+
+    hdd_info[drive].open_cnt-- ;
+}
+
+static void hdd_read_write(MESSAGE *msg)
+{
+    int drive = DEV_TO_DRV(msg->DEVICE) ;
+
+    uint64_t pos = msg->POSITION ;
+    uint32_t sect_num = (uint32_t)(pos >> SECTOR_SIZE_SHIFT) ;
+    int logic_index = (msg->DEVICE - MINOR_hd1a) % NR_SUB_PER_DRIVE ;
+
+    sect_num += (msg->DEVICE < MAX_PRIM ? hdd_info[drive].primary[msg->DEVICE].base
+                                        : hdd_info[drive].logical[logic_index].base) ;
+
+    HDD_CMD cmd ;
+    cmd.feature = 0 ;
+    cmd.n_sector = (msg->CNT + SECTOR_SIZE - 1)/SECTOR_SIZE ;
+    cmd.lba_low = sect_num & 0xff ;
+    cmd.lba_mid = (sect_num >> 8) & 0xff ;
+    cmd.lba_high = (sect_num >> 16) & 0xff ;
+    cmd.device = MAKE_CMD_DEVICE(1, drive, (sect_num >> 24) & 0xff) ;
+    cmd.command = (msg->type == MSG_DEV_READ) ? ATA_READ : ATA_WRITE ;
+    hdd_cmd_out(&cmd) ;
+
+}
+
+static void hdd_io_control(MESSAGE *msg)
+{
+
 }
 
 /**
