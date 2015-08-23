@@ -8,6 +8,9 @@
 
 #include "type.h"
 
+#define max(a, b)   ( a > b ? a : b)
+#define min(a, b)   ( a < b ? a : b)
+
 // walos lib
 void show_msg(char *msg) ;
 void show_msg_ext(char *msg, uint16_t color) ;
@@ -26,5 +29,6 @@ int printf(const char *fmt, ...) ;
 int vsprintf(char *buf, const char *fmt, va_list args) ;
 
 void read_port(uint16_t port, void *buf, int length) ;
+void write_port(uint16_t port, void *buf, int length) ;
 
 #endif

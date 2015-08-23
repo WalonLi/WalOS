@@ -212,5 +212,13 @@ void read_port(uint16_t port, void *buf, int length)
     __asm__ volatile("rep insw") ;
 }
 
-
+void write_port(uint16_t port, void *buf, int length)
+{
+    __asm__ volatile("movl %%eax, %%edx": : "a"(port));
+    __asm__ volatile("movl %%eax, %%edi": : "a"(buf));
+    __asm__ volatile("movl %%eax, %%ecx": : "a"(length));
+    __asm__ volatile("shr $1, %ecx") ;
+    __asm__ volatile("cld") ;
+    __asm__ volatile("rep outsw") ;
+}
 

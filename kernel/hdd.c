@@ -1,6 +1,6 @@
 /**
     Provide by Walon Li
-    2015/7/1
+    2015/8/23
 **/
 
 #include "kernel/process.h"
@@ -32,6 +32,7 @@ static void hdd_open(int dev) ;
 static void hdd_close(int dev) ;
 static void hdd_read_write(MESSAGE *msg) ;
 static void hdd_io_control(MESSAGE *msg) ;
+static void hdd_interrupt_wait() ;
 
 /**
     hdd task main function
@@ -114,11 +115,46 @@ static void hdd_read_write(MESSAGE *msg)
     cmd.command = (msg->type == MSG_DEV_READ) ? ATA_READ : ATA_WRITE ;
     hdd_cmd_out(&cmd) ;
 
+    int left = msg->CNT ;
+    void *liner_addr = (void*)vir_to_linear(msg->PROC_NR, msg->BUF) ;
+
+    while (left)
+    {
+        int bytes = min(SECTOR_SIZE, left) ;
+        if (msg->type == MSG_DEV_READ)
+        {
+            // wait hdd interrupt...
+            hdd_interrupt_wait();
+            read_port(HDD_REG_DATA, hd_buf, SECTOR_SIZE) ;
+            memcpy(liner_addr, vir_to_linear(HDD_TASK, hd_buf), bytes) ;
+        }
+        else
+        {
+            if (!get_status(STATUS_DRQ, STATUS_DRQ, HDD_TIMEOUT))
+                CRITICAL("fuck, hard drive always busy when read/write") ;
+            write_port(HDD_REG_DATA, liner_addr, bytes) ;
+            // wait hdd interrupt...
+            hdd_interrupt_wait();
+        }
+        left -= SECTOR_SIZE ;
+        liner_addr += SECTOR_SIZE ;
+    }
 }
 
+#define DIOCTL_GET_GEO 1 // get device start sector and sector count
 static void hdd_io_control(MESSAGE *msg)
 {
+    int dev = msg->DEVICE ;
+    int drive = DEV_TO_DRV(dev) ;
 
+
+    if (msg->REQUEST == DIOCTL_GET_GEO)
+    {
+        void *dest = vir_to_linear(msg->PROC_NR, msg->BUF) ;
+        void *src = vir_to_linear(HDD_TASK, (dev < MAX_PRIM ? &(hdd_info[drive].primary[dev])
+                                                            : &(hdd_info[drive].logical[(dev-MINOR_hd1a)%NR_SUB_PER_DRIVE]))) ;
+        memcpy(dest, src, sizeof(PARTITION_INFO)) ;
+    }
 }
 
 /**
@@ -348,6 +384,11 @@ static bool get_status(int st_mask, int val, int timeout)
             return true ;
     }
     return false ;
+}
+
+static void hdd_interrupt_wait()
+{
+
 }
 
 
