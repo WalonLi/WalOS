@@ -1,8 +1,8 @@
 # WalOS
 
-It's a small x86 OS.
+It's a stupid small x86 OS... Just learning OS development by book and datasheet.
 
-#####Build on Linux(Ubuntu 14.04)
+##### Build on Linux(Ubuntu 14.04)
 ````
 $ sudo apt-get install vgabios bochs bochs-x bximage
 $ sudo apt-get install gcc git
@@ -13,7 +13,7 @@ $ ./start.sh
 ````
 ----
 
-#####Reference
+##### Reference
 [Write your own OS with Free and Open source software(楊文博)](http://share.solrex.cn/WriteOS/)
 
 [Orange'S 一個作業系統的實現(于淵)](http://forrestyu.net/)
@@ -27,7 +27,7 @@ $ ./start.sh
 [AT Attachment with Packet Interface](http://www.t13.org/documents/uploadeddocuments/docs2007/d1532v1r4b-at_attachment_with_packet_interface_-_7_volume_1.pdf)
 
 ----
-#####System call(6/30)
+##### System call(2015/6/30)
 ```
 printf      (for print message on console)
 send_recv   (for IPC)
@@ -37,7 +37,7 @@ send_recv   (for IPC)
     ---- MSG_GET_TICKS
 ```
 
-#####Current Flow(6/26)
+##### Current Flow(2015/6/26)
 ```
             -------------------------------------------------------
 BootSector  |       Boot to BootSector
@@ -71,7 +71,7 @@ Kernel      |       Jump to kernel
 
 ----
 
-#####Memory Layout(5/17)
+##### Memory Layout(2015/5/17)
 ```
         -------------------------
         |                       |
@@ -105,7 +105,7 @@ Kernel      |       Jump to kernel
 ```
 
 ----
-#####Flat File System Layout(Orange's)(7/26)
+##### Flat File System Layout(Orange's)(7/26)
 ```
 -----------------------------
 |                           |
